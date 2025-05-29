@@ -9,6 +9,7 @@
 #include "ZEnemyManager.generated.h"
 
 class AZGameState;
+class UZSpawnManager;
 
 UCLASS()
 class PROJECTZ_API AZEnemyManager : public AActor
@@ -24,6 +25,8 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
+	UZSpawnManager* ZSpawnComp;
 	UPROPERTY(EditAnywhere, Category="Settings | Enemies")
 	TSubclassOf<AZAIController> ZAIController;
 	UPROPERTY(EditAnywhere, Category="Settings | Enemies")

@@ -20,6 +20,7 @@
 #include "ProjectZ/Interfaces/InteractionInterface.h"
 #include "EnhancedInput/Public/InputActionValue.h"
 #include "EnhancedInput/Public/InputAction.h"
+#include "ProjectZ/Quest/QuestItem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
@@ -138,6 +139,15 @@ void ASPlayer::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				}
 			}
 		}
+		else if (OtherActor->IsA<AQuestItem>())
+		{
+			if (!HasAuthority()) return;
+			AQuestItem* Item = Cast<AQuestItem>(OtherActor);
+			if (Item && Item->IsOfType(EQuestItemType::Interactable))
+			{
+				Item->Interact(this);
+			}
+		}
 	}
 }
 
@@ -250,19 +260,18 @@ void ASPlayer::BeginInteract()
 		FVector End = Start + Camera->GetForwardVector() * InteractionRange;
 		if (HasAuthority())
 			UE_LOG(LogTemp, Warning, TEXT("Camera Name: %s"), *Camera->GetName());
-		if (GetWorld()->LineTraceSingleByChannel(InteractHit, Start, End, ECC_Camera))
+		if (GetWorld()->LineTraceSingleByChannel(InteractHit, Start, End, ECC_Visibility))
 		{
 			DrawDebugLine(GetWorld(), Start, InteractHit.Location, FColor::Blue, false, 2.f);
 			UE_LOG(LogTemp, Warning, TEXT("Actor Hit: %s"), *InteractHit.GetActor()->GetName());
-			if (IInteractionInterface* InteractActor = Cast<IInteractionInterface>(InteractHit.GetActor()))
+			if (InteractHit.GetActor()->GetClass()->ImplementsInterface(UInteractionInterface::StaticClass()))
 			{
-				//if (HasAuthority())
-				//{
-				IInteractionInterface::Execute_Interact_BP(this, this);
-				InteractActor->Interact(this);
-				//}
-				//else
-					//Server_BeginInteract();
+				IInteractionInterface::Execute_Interact_BP(InteractHit.GetActor(), this);
+
+				if (IInteractionInterface* InteractActor = Cast<IInteractionInterface>(InteractHit.GetActor()))
+				{
+					InteractActor->Interact(this);
+				}
 			}
 			else
 			{

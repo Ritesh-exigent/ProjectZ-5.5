@@ -25,6 +25,8 @@ void AZEnemy::BeginPlay()
 
 	ZController = Cast<AZAIController>(GetController());
 	AnimInst = Cast<UZAnimInstance>(SKMesh->GetAnimInstance());
+	if (AnimInst)
+		AnimInst->OnMontageEnded.AddDynamic(this, &AZEnemy::OnMontageEnded);
 	if (MoveComp)
 	{
 		MoveComp->SetIsControllingAI(true);
@@ -59,10 +61,17 @@ void AZEnemy::PlayAttackMontage(bool bOverride)
 {
 	if (AnimInst)
 	{
+		GetMoveComponent()->PauseMovement(true);
 		//UE_LOG(LogTemp, Warning, TEXT("Enemy Attacking"));
 		int32 RandomNum = FMath::RandRange(0, AttackMontages.Num() - 1);
 		AnimInst->PlayMontage(AttackMontages[RandomNum], bOverride);
 	}
+}
+
+void AZEnemy::OnMontageEnded(UAnimMontage* InMontage, bool bInterrupted)
+{
+	if (InMontage)
+		GetMoveComponent()->PauseMovement(false);
 }
 
 void AZEnemy::NetMulticast_PlayAttackMontage_Implementation(bool bOverride)

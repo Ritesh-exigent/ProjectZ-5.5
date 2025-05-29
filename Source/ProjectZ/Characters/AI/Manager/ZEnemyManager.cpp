@@ -5,6 +5,7 @@
 #include "NavigationSystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "./ProjectZ/GameModes/ZGameMode.h"
+#include "../Spawn/ZSpawnManager.h"
 #include "./ProjectZ/GameStates/ZGameState.h"
 
 // Sets default values
@@ -12,6 +13,8 @@ AZEnemyManager::AZEnemyManager()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
+	ZSpawnComp = CreateDefaultSubobject<UZSpawnManager>("ZSpawnComponent");
+
 	MaxEnemies = 10;
 	MaxSpawnedEnemies = 5;
 	SpawnOtherOnRemaining = 1;
@@ -36,8 +39,7 @@ void AZEnemyManager::BeginPlay()
 		SpawnOtherOnRemaining = MaxSpawnedEnemies;
 
 	ZGameState = GetWorld()->GetAuthGameMode()->GetGameState<AZGameState>();
-	/*bCanSpawnEnemies = true;
-	PrepareNextWave();*/
+
 }
 
 void AZEnemyManager::Tick(float DeltaTime)
@@ -79,8 +81,9 @@ void AZEnemyManager::SpawnEnemies()
 		//for (int32 i = 0; i < EnemiesToSpawn; ++i)
 		//{	
 			AsyncTask(ENamedThreads::GameThread, [NavSys, EnemiesToSpawn, this]() {
-
-				int32 i = 0;
+				
+				ZSpawnComp->CurateZombieSpawn(EnemiesToSpawn, ESpawnType::Spread);
+				/*int32 i = 0;
 				int32 NumPlayer = GetWorld()->GetAuthGameMode()->GetNumPlayers();
 				APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), FMath::RandRange(0, NumPlayer - 1));
 				while (i < EnemiesToSpawn)
@@ -105,7 +108,7 @@ void AZEnemyManager::SpawnEnemies()
 						}
 					}
 
-				}
+				}*/
 			});
 		//}
 	}

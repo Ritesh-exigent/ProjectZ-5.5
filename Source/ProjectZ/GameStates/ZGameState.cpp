@@ -2,6 +2,7 @@
 
 
 #include "ZGameState.h"
+#include "../Quest/QuestItem.h"
 #include "Net/UnrealNetwork.h"
 
 AZGameState::AZGameState()
@@ -19,7 +20,9 @@ AZGameState::AZGameState()
 void AZGameState::BeginPlay()
 {
 	Super::BeginPlay();
-	StartGameQuest();
+
+	if (HasAuthority())
+		StartGameQuest();
 }
 
 void AZGameState::Tick(float DeltaTime)
@@ -39,9 +42,8 @@ void AZGameState::Tick(float DeltaTime)
 void AZGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
+	DOREPLIFETIME(AZGameState, CurrentCount);
 	DOREPLIFETIME(AZGameState, EnemyWaveInfo);
-
 	DOREPLIFETIME(AZGameState, C_QuestInfo);
 	DOREPLIFETIME(AZGameState, C_SubQuestInfo);
 }
@@ -79,17 +81,22 @@ void AZGameState::InitQuestFromDataTable(int32 Index)
 	if (CurrentQuest)
 	{
 		C_QuestInfo = *CurrentQuest;
-		C_SubQuestIndex = 0;
-		C_SubQuestInfo = CurrentQuest->SubQuests[C_SubQuestIndex];
-		TotalCount = C_SubQuestInfo.TotalCount;
-		TotalTime = C_SubQuestInfo.TotalTime;
-		OnRep_OnCurrentQuestInfoUpdated();
-		OnRep_OnCurrentSubQuestInfoUpdated();
+		if (CurrentQuest->SubQuests.Num() > 0)
+		{
+			C_SubQuestIndex = 0;
+			C_SubQuestInfo = CurrentQuest->SubQuests[C_SubQuestIndex];
+			ActivateSubQuestItems(C_SubQuestInfo.RequiredItems);
+			TotalCount = C_SubQuestInfo.TotalCount;
+			TotalTime = C_SubQuestInfo.TotalTime;
+			OnRep_OnCurrentQuestInfoUpdated();
+			OnRep_OnCurrentSubQuestInfoUpdated();
+		}
 	}
 }
 
 void AZGameState::LoadNextQuest()
 {
+	++C_SubQuestIndex;
 	if (C_SubQuestIndex >= C_QuestInfo.SubQuests.Num())
 	{
 		++C_QuestIndex;
@@ -102,12 +109,22 @@ void AZGameState::LoadNextQuest()
 	}
 	else
 	{
-		++C_SubQuestIndex;
 		C_SubQuestInfo = C_QuestInfo.SubQuests[C_SubQuestIndex];
+		ActivateSubQuestItems(C_SubQuestInfo.RequiredItems);
 		TotalCount = C_SubQuestInfo.TotalCount;
 		TotalTime = C_SubQuestInfo.TotalTime;
 		OnRep_OnCurrentSubQuestInfoUpdated();
 	}
+}
+
+void AZGameState::Server_StartGameQuest_Implementation()
+{
+	StartGameQuest();
+}
+
+void AZGameState::OnRep_OnCurrentCountUpdated()
+{
+	OnQuestItemCountUpdated.ExecuteIfBound(CurrentCount);
 }
 
 void AZGameState::OnRep_OnCurrentQuestInfoUpdated()
@@ -126,11 +143,16 @@ void AZGameState::UpdateQuest(int32 SubQuestID, EQuestItemType ItemType)
 	{
 		if (C_SubQuestInfo.SubQuestType == EQuestType::QT_Collect)
 			UpdateItemCount(SubQuestID);
-		else if (C_SubQuestInfo.SubQuestType == EQuestType::QT_Time)
+		else //if (C_SubQuestInfo.SubQuestType == EQuestType::QT_Time)
 		{
 			LoadNextQuest();
 		}
 	}
+}
+
+void AZGameState::UpdateCurrentQuest()
+{
+	UpdateQuest(C_SubQuestInfo.SubQuestID, EQuestItemType::Interactable);
 }
 
 void AZGameState::UpdateItemCount(int32 SubQuestID)
@@ -138,6 +160,7 @@ void AZGameState::UpdateItemCount(int32 SubQuestID)
 	if (C_SubQuestInfo.SubQuestID == SubQuestID)//redundant
 	{
 		CurrentCount++;
+		OnRep_OnCurrentCountUpdated();
 		if (CurrentCount == TotalCount)
 		{
 			//finish quest
@@ -145,6 +168,20 @@ void AZGameState::UpdateItemCount(int32 SubQuestID)
 		}
 	}
 
+}
+
+void AZGameState::ActivateSubQuestItems(TArray<TSoftObjectPtr<AQuestItem>>& RequiredItems)
+{
+	if (RequiredItems.Num() <= 0) return;
+
+	for (TSoftObjectPtr<AQuestItem> Item : RequiredItems)
+	{
+		if (Item.IsValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Item Name: %s"), *Item->GetName());
+			Item->Activate();
+		}
+	}
 }
 
 void AZGameState::StartTimer(float InTime)

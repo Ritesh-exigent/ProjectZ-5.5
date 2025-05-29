@@ -37,6 +37,8 @@ private:
 	void OnQuestUpdated(FText InQuestTitle);
 	UFUNCTION()
 	void OnSubQuestUpdated(FSubQuestInfo InQuestInfo);
+	UFUNCTION()
+	void OnQuestItemCountUpdated(int32 NewCount);
 
 public:
 
@@ -62,6 +64,7 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* T_Time;
 
+	int32 TotalCount;
 	float MaxHealth;
 
 	void AddQuestDescription(FQuestDescription InQuestDescription);
@@ -70,6 +73,4 @@ public:
 	void SetTotalAmmo(int32 Amount);
 	void SetCurrentHealth(float InCurrentHealth);
 	void SetMaxHealth(float InMaxHealth);
-
-
 };

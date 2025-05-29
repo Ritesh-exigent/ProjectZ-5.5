@@ -45,6 +45,7 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnEnemyInfoUpdated, FEnemyWaveInfo, NewEnemyW
 //QUEST DELEGATES........................................
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnQuestUpdated, FText, NewQuestTitle);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnSubQuestUpdated, FSubQuestInfo, NewSubQuestInfo);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnQuestItemCountUpdated, int32, NewCount);
 
 UCLASS()
 class PROJECTZ_API AZGameState : public AGameStateBase
@@ -83,6 +84,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category="Values | Quest", meta=(AllowPrivateAccess = true))
 	UDataTable* QuestTable;
 
+	UPROPERTY(ReplicatedUsing = OnRep_OnCurrentCountUpdated)
 	int32 CurrentCount;
 	int32 TotalCount;
 
@@ -104,7 +106,13 @@ private:
 	void StartTimer(float InTime);
 
 	void UpdateItemCount(int32 SubQuestID);
-
+	void ActivateSubQuestItems(TArray<TSoftObjectPtr<AQuestItem>>& RequiredItems);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_StartGameQuest();
+	void Server_StartGameQuest_Implementation();
+	UFUNCTION()
+	void OnRep_OnCurrentCountUpdated();
 	UFUNCTION()
 	void OnRep_OnCurrentQuestInfoUpdated();
 	UFUNCTION()
@@ -115,6 +123,9 @@ public:
 
 	FOnQuestUpdated OnQuestUpdated;
 	FOnSubQuestUpdated OnSubQuestUpdated;
+	FOnQuestItemCountUpdated OnQuestItemCountUpdated;
 
 	void UpdateQuest(int32 SubQuestID, EQuestItemType ItemType);
+	UFUNCTION(BlueprintCallable)
+	void UpdateCurrentQuest();
 };

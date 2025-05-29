@@ -18,7 +18,6 @@ UZSpawnManager::UZSpawnManager()
 void UZSpawnManager::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("exists"));
 	CurrentSpawnType = ESpawnType::Spread;
 
 	GetWorld()->GetTimerManager().SetTimer(SphereHandle, this, &UZSpawnManager::DistanceSphereTrace, .1f, true);
@@ -54,7 +53,7 @@ void UZSpawnManager::DistanceSphereTrace()
 					HitResult,
 					Origin,
 					FQuat::Identity,
-					ECC_GameTraceChannel1,
+					ECC_Visibility,
 					FCollisionShape::MakeSphere(CurrentRadiusOfSphere),
 					Params
 				);
@@ -65,13 +64,14 @@ void UZSpawnManager::DistanceSphereTrace()
 						if (AActor* Actor = Hit.GetActor()) {
 
 							if (Hit.GetActor()->IsA<AZSpawn>()) {
+								//UE_LOG(LogTemp, Warning, TEXT("Spawner name: %s"), *Hit.GetActor()->GetName());
 								AZSpawn* Spawner = Cast<AZSpawn>(Actor);
 								ClosestSpawners.Add(Spawner);
 							}
 						}
 					}
 				}
-				DrawDebugSphere(GetWorld(), Origin, CurrentRadiusOfSphere, 32, FColor::Red, false, 1.0f);
+				//DrawDebugSphere(GetWorld(), Origin, CurrentRadiusOfSphere, 32, FColor::Red, false, 1.0f);
 
 				CurrentRadiusOfSphere += 1000;
 			}
@@ -81,21 +81,21 @@ void UZSpawnManager::DistanceSphereTrace()
 
 void UZSpawnManager::CurateZombieSpawn(int num, ESpawnType NewSpawnType)
 {
+	int32 Param = 1;
 	switch (NewSpawnType) {
 	case ESpawnType::Horde:
-		VarienceOfSpawning = ScaleByNumber(num, 3);
-
-		UE_LOG(LogTemp, Warning, TEXT("%d"), VarienceOfSpawning);
+		Param = 3;
 		break;
 	case ESpawnType::Spread:
-		VarienceOfSpawning = ScaleByNumber(num, 2);
-	UE_LOG(LogTemp, Warning, TEXT("%d"),VarienceOfSpawning);
+		Param = 2;
 		break;
 	case ESpawnType::Pop:
-		VarienceOfSpawning = ScaleByNumber(num, 1);
-		UE_LOG(LogTemp, Warning, TEXT("%d"), VarienceOfSpawning);
+		Param = 1;
 		break;
 	}
+
+	VarienceOfSpawning = ScaleByNumber(num, Param);
+	UE_LOG(LogTemp, Warning, TEXT("variance %d"), VarienceOfSpawning);
 
 	if (VarienceOfSpawning == 0 || num == 0 ) return;
 	if (num < VarienceOfSpawning) VarienceOfSpawning = num;
@@ -130,36 +130,34 @@ void UZSpawnManager::CurateZombieSpawn(int num, ESpawnType NewSpawnType)
 
 	count = 0;
 	
-	UE_LOG(LogTemp, Warning, TEXT("readbefore"));
-		GetWorld()->GetTimerManager().SetTimer(SpawnHandle, [this,ValidSpawners]()
-		{
-				
-				if (NumberOfZombies <= 0) {
-					GetWorld()->GetTimerManager().ClearTimer(SpawnHandle);
+	GetWorld()->GetTimerManager().SetTimer(SpawnHandle, [this,ValidSpawners]()
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Time Spawn"));
+		if (NumberOfZombies <= 0) {
+			GetWorld()->GetTimerManager().ClearTimer(SpawnHandle);
 			
-					return;
-				}
-				else if (count >= VarienceOfSpawning) {
-					count = 0;
-				}
-				else if (count >= ValidSpawners.Num()){
-					count = 0;
-				}
-				else {
-					if (!bShouldSpawnZombies) {
-						bShouldSpawnZombies = true;
-						return;
-					}
-					TimedSpawn(ValidSpawners);
+			return;
+		}
+		else if (count >= VarienceOfSpawning) {
+			count = 0;
+		}
+		else if (count >= ValidSpawners.Num()){
+			count = 0;
+		}
+		else {
+			if (!bShouldSpawnZombies) {
+				bShouldSpawnZombies = true;
+				return;
+			}
+			TimedSpawn(ValidSpawners);
 					
-				}
+		}
 
-		}, .2f, true);
+	}, .2f, true);
 }
 
 void UZSpawnManager::TimedSpawn(TArray<AZSpawn*> ValidSpawners)
 {
-	
 		if (ValidSpawners[count]) {
 			AZSpawn* Spawner = ValidSpawners[count]; 
 			Spawner->AllSpawn(AmountToSpawn);

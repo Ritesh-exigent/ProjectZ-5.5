@@ -17,6 +17,7 @@ bool USPlayerHUD::Initialize()
 		return false;
 	//if(GetOwningPlayerPawn()->GetLocalRole() == ROLE_AutonomousProxy)
 	//Server_InitGameState();
+	TotalCount = 0;
 	MaxHealth = 200.f;
 	InitGameState();
 	return bSuccess;
@@ -41,6 +42,9 @@ void USPlayerHUD::OnQuestUpdated(FText InQuestTitle)
 {
 	//UE_LOG(LogTemp, Warning, TEXT("Quest Title Updated"));
 	T_QuestTitle->SetText(InQuestTitle);
+	T_SubQuestTitle->SetText(FText());
+	T_Count->SetText(FText());
+	T_Time->SetText(FText());
 }
 
 void USPlayerHUD::OnSubQuestUpdated(FSubQuestInfo InSubQuestInfo)
@@ -48,10 +52,17 @@ void USPlayerHUD::OnSubQuestUpdated(FSubQuestInfo InSubQuestInfo)
 	T_SubQuestTitle->SetText(InSubQuestInfo.SubQuestTitle);
 	if (InSubQuestInfo.SubQuestType == EQuestType::QT_Collect)
 	{
-		T_Count->SetText(FText::FromString(FString::Printf(TEXT("0/%d"), InSubQuestInfo.TotalCount)));
+		TotalCount = InSubQuestInfo.TotalCount;
+		T_Count->SetText(FText::FromString(FString::Printf(TEXT("0/%d"), TotalCount)));
 	}
 	else if (InSubQuestInfo.SubQuestType == EQuestType::QT_Time)
 		T_Time->SetText(FText::FromString(FString::Printf(TEXT("0/%d"), InSubQuestInfo.TotalTime)));
+}
+
+void USPlayerHUD::OnQuestItemCountUpdated(int32 NewCount)
+{
+	if(T_Count)
+	T_Count->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), NewCount, TotalCount)));
 }
 
 void USPlayerHUD::InitGameState()
@@ -64,6 +75,7 @@ void USPlayerHUD::InitGameState()
 			ZGameState->OnEnemyWaveUpdated.BindUFunction(this, "OnEnemyWaveInfoUpdated");
 			ZGameState->OnQuestUpdated.BindUFunction(this, "OnQuestUpdated");
 			ZGameState->OnSubQuestUpdated.BindUFunction(this, "OnSubQuestUpdated");
+			ZGameState->OnQuestItemCountUpdated.BindUFunction(this, "OnQuestItemCountUpdated");
 
 			UE_LOG(LogTemp, Warning, TEXT("Gamestate is valid in splayerhud.cpp"));
 		}

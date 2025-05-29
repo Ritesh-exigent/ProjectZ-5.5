@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "../Quest/QuestUtils.h"
 #include "ZGameMode.generated.h"
 
 class ASPlayer;
@@ -26,10 +25,9 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
 	TSubclassOf<ASPlayer> PlayerClass;
-	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
-	TSubclassOf<AQuestManager> QuestManagerClass;
 	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
 	TSubclassOf<AZEnemyManager> EnemyManagerClass;
 	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
@@ -52,6 +50,5 @@ public:
 	__inline TArray<ASPlayer*> GetAllPlayers() { return Players; }
 	ASPlayer* GetPlayerPawnAt(int32 Index);
 	ASPlayer* GetRandomAlivePlayer();
-	FQuestDescription GetCurrentQuestDecription();
 
 };

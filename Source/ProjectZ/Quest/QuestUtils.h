@@ -50,7 +50,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Values", meta = (EditCondition = "SubQuestType == EQuestType::QT_Time"))
 	float TotalTime;
 	UPROPERTY(EditAnywhere)
-	TArray<AQuestItem*> RequiredItems;
+	TArray<TSoftObjectPtr<AQuestItem>> RequiredItems;
 	UPROPERTY(EditAnywhere)
 	TEnumAsByte<EQuestStatus> Status;
 };

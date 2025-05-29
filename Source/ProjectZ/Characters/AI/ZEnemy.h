@@ -62,10 +62,9 @@ private:
 	friend class AZEnemyManager;
 
 	void DropAmmunitions();
-
 	void InitDestroy();
-
 	void PlayAttackMontage(bool bOverride);
+	void OnMontageEnded(UAnimMontage* InMontage, bool bInterrupted);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void NetMulticast_PlayAttackMontage(bool bOverride);

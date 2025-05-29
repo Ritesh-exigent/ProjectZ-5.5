@@ -4,7 +4,7 @@
 #include "ZSpawn.h"
 #include "Components/SphereComponent.h"
 #include "DrawDebugHelpers.h"
-
+#include "NavigationSystem.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
@@ -41,8 +41,6 @@ void AZSpawn::OnSphereOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* 
 		return;
 
 	}
-
-
 	CurrentlyOverlappingActors.Add(OtherActor);
 	IsValidSpawner = false;
 	
@@ -52,9 +50,7 @@ void AZSpawn::OnSphereOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Ot
 {
 	if (OtherActor->IsA(CubeClass)) {
 		return;
-
 	}
-
 	CurrentlyOverlappingActors.Remove(OtherActor);
 	IsValidSpawner = true;
 	
@@ -108,29 +104,24 @@ float AZSpawn::DistanceCalc(FVector Start, FVector End)
 void AZSpawn::SpawnZombie(int NumToSpawn)
 {
 	
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (NavSys)
+	{
+		//todo- async loop
+			for (int i = 0; i < NumToSpawn; i++) {
 
-	float RandomX = FMath::RandRange( - 1.f,  1.f)*MaxSpawningRadius;
-	float RandomY = FMath::RandRange(-1.f, 1.f) * MaxSpawningRadius;
-	FVector RandomizedLoc(RandomX, RandomY, 0);
-	FActorSpawnParameters Params;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	for (int i = 0; i < NumToSpawn; i++) {
-		AsyncTask(ENamedThreads::GameThread, [this, RandomizedLoc, Params]() {
-			AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(CubeClass, GetActorLocation() + RandomizedLoc, GetActorRotation(), Params);
-			});
+				FNavLocation RandomLoc;
+				if (NavSys->GetRandomPointInNavigableRadius(GetActorLocation(), MaxSpawningRadius, RandomLoc))
+				{
+					FActorSpawnParameters Params;
+					Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+					AsyncTask(ENamedThreads::GameThread, [this, RandomLoc, Params]() {
+						AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(CubeClass, RandomLoc.Location + FVector(0.f, 0.f, 96.f), GetActorRotation(), Params);
+						});
+				}	
+			}
 	}
-
-	/*SpawnZombieAsync(RandomizedLoc, [](AActor* SpawnedZombie)
-		{
-			if (SpawnedZombie)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Successfully spawned zombie: %s"), *SpawnedZombie->GetName());
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Zombie spawn failed."));
-			}
-		});*/
 
 }
 
@@ -178,6 +169,7 @@ void AZSpawn::SpawnZombie(int NumToSpawn)
 
 void AZSpawn::AllSpawn(int num)
 {
+	UE_LOG(LogTemp, Warning, TEXT("All Spawn! %d"), IsValidSpawner);
 	//SpawnTotal = num;
 	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this, num]() {
 
@@ -194,6 +186,7 @@ void AZSpawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	//UE_LOG(LogTemp, Error, TEXT("Name: %s, Valid %d"), *GetName(), IsValidSpawner);
 	if (CurrentlyOverlappingActors.Num() == 0) return;
 
 	for (AActor* Actor : CurrentlyOverlappingActors)
@@ -218,6 +211,7 @@ void AZSpawn::Tick(float DeltaTime)
 			}
 		}
 	}
+
 }
 
 

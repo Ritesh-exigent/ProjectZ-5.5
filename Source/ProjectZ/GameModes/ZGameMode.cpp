@@ -2,7 +2,6 @@
 
 
 #include "ZGameMode.h"
-#include "../Quest/QuestManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 #include "./ProjectZ/GameStates/ZGameState.h"
@@ -13,6 +12,9 @@ AZGameMode::AZGameMode()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	GameStateClass = AZGameState::StaticClass();
+
+
+
 	MaxPlayers = 3;
 	bInitZManager = false;
 	bSpawnEnemies = false;
@@ -20,10 +22,8 @@ AZGameMode::AZGameMode()
 
 void AZGameMode::BeginPlay()
 {
+
 	EnemyManager = GetWorld()->SpawnActor<AZEnemyManager>(EnemyManagerClass);
-	QuestManager = GetWorld()->SpawnActor<AQuestManager>(QuestManagerClass);
-	if (QuestManager)
-		QuestManager->SetGameMode(this);
 	/*if (EnemyManager)
 		EnemyManager->InitEnemies();*/
 }
@@ -85,11 +85,4 @@ ASPlayer* AZGameMode::GetRandomAlivePlayer()
 		}
 	}
 	return nullptr;
-}
-
-FQuestDescription AZGameMode::GetCurrentQuestDecription()
-{
-	if(QuestManager)
-	return QuestManager->GetCurrentQuestDescription();
-	return FQuestDescription();
 }

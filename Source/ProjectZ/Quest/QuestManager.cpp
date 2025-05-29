@@ -53,13 +53,13 @@ void AQuestManager::SetCurrentSubQuestData()
 
 void AQuestManager::ActivateQuestItems()
 {
-	for (FSubQuestInfo& SubInfo : CurrentQuestInfo->SubQuests)
+	/*for (FSubQuestInfo& SubInfo : CurrentQuestInfo->SubQuests)
 	{
 		for (AQuestItem* Item : SubInfo.RequiredItems)
 		{
 			Item->Activate();
 		}
-	}
+	}*/
 }
 
 void AQuestManager::UpdateQuestData(AQuestItem* Item)
