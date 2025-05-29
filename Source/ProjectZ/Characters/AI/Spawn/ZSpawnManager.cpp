@@ -53,7 +53,7 @@ void UZSpawnManager::DistanceSphereTrace()
 					HitResult,
 					Origin,
 					FQuat::Identity,
-					ECC_Visibility,
+					ECC_GameTraceChannel1,
 					FCollisionShape::MakeSphere(CurrentRadiusOfSphere),
 					Params
 				);
@@ -71,7 +71,7 @@ void UZSpawnManager::DistanceSphereTrace()
 						}
 					}
 				}
-				//DrawDebugSphere(GetWorld(), Origin, CurrentRadiusOfSphere, 32, FColor::Red, false, 1.0f);
+				
 
 				CurrentRadiusOfSphere += 1000;
 			}
@@ -128,11 +128,12 @@ void UZSpawnManager::CurateZombieSpawn(int num, ESpawnType NewSpawnType)
 	AmountToSpawn = num / VarienceOfSpawning;
 	VarienceOfSpawning = FMath::Min(VarienceOfSpawning, ValidSpawners.Num());
 
+	ZombiesSpawned = 0;
 	count = 0;
+			UE_LOG(LogTemp, Warning, TEXT("Time Spawn"));
 	
-	GetWorld()->GetTimerManager().SetTimer(SpawnHandle, [this,ValidSpawners]()
+	GetWorld()->GetTimerManager().SetTimer(SpawnHandle, [this,ValidSpawners,num,NewSpawnType]()
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Time Spawn"));
 		if (NumberOfZombies <= 0) {
 			GetWorld()->GetTimerManager().ClearTimer(SpawnHandle);
 			
@@ -150,7 +151,10 @@ void UZSpawnManager::CurateZombieSpawn(int num, ESpawnType NewSpawnType)
 				return;
 			}
 			TimedSpawn(ValidSpawners);
-					
+			if (!DidItWork) {
+				GetWorld()->GetTimerManager().ClearTimer(SpawnHandle);
+				CurateZombieSpawn(num - ZombiesSpawned, NewSpawnType);
+			}
 		}
 
 	}, .2f, true);
@@ -158,16 +162,25 @@ void UZSpawnManager::CurateZombieSpawn(int num, ESpawnType NewSpawnType)
 
 void UZSpawnManager::TimedSpawn(TArray<AZSpawn*> ValidSpawners)
 {
-		if (ValidSpawners[count]) {
-			AZSpawn* Spawner = ValidSpawners[count]; 
+	if (ValidSpawners[count]) {
+		AZSpawn* Spawner = ValidSpawners[count];
+		if (Spawner->IsValidSpawner) {
+			UE_LOG(LogTemp, Error, TEXT("SpawnerRan"));
 			Spawner->AllSpawn(AmountToSpawn);
+			ZombiesSpawned += AmountToSpawn;
 			NumberOfZombies = NumberOfZombies - AmountToSpawn;
 			//UE_LOG(LogTemp, Error, TEXT("read %d"),AmountToSpawn);
 			if (NumberOfZombies < AmountToSpawn) {
 				AmountToSpawn = NumberOfZombies;
 			}
 			count++;
+			
 		}
+		else
+		{
+			DidItWork = false;
+		}
+	}
 }
 
 int UZSpawnManager::ScaleByNumber(int num,int OutputRangeCoeff)

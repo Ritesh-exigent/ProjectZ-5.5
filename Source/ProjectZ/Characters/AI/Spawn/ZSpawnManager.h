@@ -56,11 +56,12 @@ private:
 	int NumberOfZombies;
 	int VarienceOfSpawning=3;
 	int AmountToSpawn;
+	bool DidItWork = true;
+	int ZombiesSpawned = 0;
 
 	
 	TArray<AZSpawn*> FinalSpawners;
 	TSet<AZSpawn*> ClosestSpawners;
-
 	void TimedSpawn(TArray<AZSpawn*> ValidSpawners);
 	int ScaleByNumber(int num, int OutputRangeCoeff);
 	

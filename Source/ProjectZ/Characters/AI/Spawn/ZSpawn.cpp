@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "Async/Async.h"
+#include "ProjectZ/Characters/Player/SPlayer.h"
 
 
 
@@ -37,22 +38,23 @@ void AZSpawn::BeginPlay()
 
 void AZSpawn::OnSphereOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor->IsA(CubeClass)) {
-		return;
-
-	}
+	if (OtherActor->IsA<ASPlayer>())
+	{
 	CurrentlyOverlappingActors.Add(OtherActor);
 	IsValidSpawner = false;
+
+	}
+
 	
 }
 
 void AZSpawn::OnSphereOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (OtherActor->IsA(CubeClass)) {
-		return;
-	}
-	CurrentlyOverlappingActors.Remove(OtherActor);
-	IsValidSpawner = true;
+
+		CurrentlyOverlappingActors.Remove(OtherActor);
+		IsValidSpawner = false;
+
+	
 	
 }
 
@@ -64,13 +66,14 @@ bool AZSpawn::CheckLos(FVector Start, FVector End)
 	FCollisionQueryParams CParams;
 	CParams.AddIgnoredActor(this);
 
-	bool Hit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel1, CParams);
+	bool Hit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, CParams);
 	DrawDebugLine(GetWorld(), Start, HitResult.Location, FColor::Blue, false, .1f);
-	/*if (HitResult.GetActor()->IsA<ATestCharacter>())
+	
+	if (HitResult.GetActor() && HitResult.GetActor()->IsA<ASPlayer>())
 	{
 	return true;
 
-	}*/
+	}
 	return false;
 }
 
@@ -196,7 +199,6 @@ void AZSpawn::Tick(float DeltaTime)
 		{	
 	
 			Dist = DistanceCalc(Actor->GetActorLocation(), GetActorLocation());
-			
 
 			if ((!CheckLos(GetActorLocation(), Actor->GetActorLocation())) && (Dist>400)) {
 				
@@ -211,6 +213,7 @@ void AZSpawn::Tick(float DeltaTime)
 			}
 		}
 	}
+			//UE_LOG(LogTemp, Error, TEXT("FOUND %s ACTOR: %d"),*GetName(), IsValidSpawner);
 
 }
 
