@@ -7,6 +7,8 @@
 #include "GameFramework/Actor.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/OverlapResult.h"
+#include "DrawDebugHelpers.h"
+#include "../Manager/ZEnemyManager.h"
 
 UZSpawnManager::UZSpawnManager()
 {
@@ -53,12 +55,14 @@ void UZSpawnManager::DistanceSphereTrace()
 					HitResult,
 					Origin,
 					FQuat::Identity,
-					ECC_GameTraceChannel1,
+					ECC_GameTraceChannel7,
 					FCollisionShape::MakeSphere(CurrentRadiusOfSphere),
 					Params
 				);
+				//DrawDebugSphere(GetWorld(), Origin, CurrentRadiusOfSphere, 12, FColor::Blue, false, 2.f);
 
 				if (bHit) {
+					//UE_LOG(LogTemp, Warning, TEXT("Hit for spawner"));
 					for (const FOverlapResult& Hit : HitResult)
 					{
 						if (AActor* Actor = Hit.GetActor()) {
@@ -66,12 +70,14 @@ void UZSpawnManager::DistanceSphereTrace()
 							if (Hit.GetActor()->IsA<AZSpawn>()) {
 								//UE_LOG(LogTemp, Warning, TEXT("Spawner name: %s"), *Hit.GetActor()->GetName());
 								AZSpawn* Spawner = Cast<AZSpawn>(Actor);
+								Spawner->SetManager(Cast<AZEnemyManager>(GetOwner()));
 								ClosestSpawners.Add(Spawner);
 							}
 						}
 					}
 				}
-				
+				/*else
+					UE_LOG(LogTemp, Warning, TEXT("Hit Failed for spawner"));*/
 
 				CurrentRadiusOfSphere += 1000;
 			}
@@ -123,6 +129,8 @@ void UZSpawnManager::CurateZombieSpawn(int num, ESpawnType NewSpawnType)
 		}
 	}
 
+	//UE_LOG(LogTemp, Warning, TEXT("Final Spawn : %d"), FinalSpawners.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("Valid Spawn : %d"), ValidSpawners.Num());
 	if (ValidSpawners.IsEmpty()) return;
 
 	AmountToSpawn = num / VarienceOfSpawning;
@@ -130,7 +138,7 @@ void UZSpawnManager::CurateZombieSpawn(int num, ESpawnType NewSpawnType)
 
 	ZombiesSpawned = 0;
 	count = 0;
-			UE_LOG(LogTemp, Warning, TEXT("Time Spawn"));
+	UE_LOG(LogTemp, Warning, TEXT("Time Spawn"));
 	
 	GetWorld()->GetTimerManager().SetTimer(SpawnHandle, [this,ValidSpawners,num,NewSpawnType]()
 	{

@@ -54,6 +54,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category="Settings | Input")
 	UInputAction* LookAction;
 	UPROPERTY(EditDefaultsOnly, Category="Settings | Input")
+	UInputAction* SprintAction;
+	UPROPERTY(EditDefaultsOnly, Category="Settings | Input")
 	UInputAction* JumpAction;
 	UPROPERTY(EditDefaultsOnly, Category="Settings | Input")
 	UInputAction* FireAction;
@@ -69,14 +71,16 @@ private:
 	UPROPERTY(Replicated)
 	float LookY;
 
+	bool bSprint;
 	FVector2D LookValue;
 	USPlayerHUD* PlayerHUD;
 	USPAnimInstance* AnimInst;
 	FQuestDescription CurrentQuestDescription;
 
 	void PerformMove(const FInputActionValue& Value);
-
 	void Look(const FInputActionValue& Value);
+	void Sprint(const FInputActionValue& Value);
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_Look(FVector2D LookVal);
 	void Server_Look_Implementation(FVector2D LookVal);
@@ -114,14 +118,10 @@ public:
 	__inline USPlayerHUD* GetPlayerHUD() { return PlayerHUD; }
 	__inline USPAnimInstance* GetAnimInstance() { return AnimInst; }
 	__inline float GetLookYValue() { return LookY; }
-	__inline void SetCurrentQuestDescription(FQuestDescription InQuestDescription) { CurrentQuestDescription = InQuestDescription; }
 	
 	void SetCurrentAmmo(int32 InCurrentAmmo);
 	void SetTotalAmmo(int32 InTotalAmmo);
 
 	bool AddWeapon(AWeapon* NewWeapon);
 	void UpdateAnimInstanceMontage(UAnimMontage* InMontage);
-
-	void AddQuestDescription(FQuestDescription InDescription);
-
 };

@@ -20,6 +20,7 @@ void AZAIController::BeginPlay()
 {
 	Super::BeginPlay();
 	bIsTargetDetected = false;
+	SetActorTickEnabled(false);
 }
 
 void AZAIController::OnPossess(APawn* InPawn)
@@ -40,6 +41,11 @@ void AZAIController::OnPossess(APawn* InPawn)
 			delete(ZBB);
 		}
 	}
+}
+
+void AZAIController::OnUnPossess()
+{
+	StopBehaviorTree();
 }
 
 void AZAIController::RequestAIMovement(FVector InTargetLocation, EMoveState InState, float InAcceptanceRadius)

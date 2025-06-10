@@ -11,6 +11,8 @@
 #include "TimerManager.h"
 #include "Async/Async.h"
 #include "ProjectZ/Characters/Player/SPlayer.h"
+#include "../ZEnemy.h"
+#include "../Manager/ZEnemyManager.h"
 
 
 
@@ -40,9 +42,8 @@ void AZSpawn::OnSphereOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* 
 {
 	if (OtherActor->IsA<ASPlayer>())
 	{
-	CurrentlyOverlappingActors.Add(OtherActor);
-	IsValidSpawner = false;
-
+		CurrentlyOverlappingActors.Add(OtherActor);
+		IsValidSpawner = false;
 	}
 
 	
@@ -50,12 +51,8 @@ void AZSpawn::OnSphereOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* 
 
 void AZSpawn::OnSphereOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-
-		CurrentlyOverlappingActors.Remove(OtherActor);
-		IsValidSpawner = false;
-
-	
-	
+	CurrentlyOverlappingActors.Remove(OtherActor);
+	IsValidSpawner = false;
 }
 
 
@@ -117,10 +114,15 @@ void AZSpawn::SpawnZombie(int NumToSpawn)
 				if (NavSys->GetRandomPointInNavigableRadius(GetActorLocation(), MaxSpawningRadius, RandomLoc))
 				{
 					FActorSpawnParameters Params;
-					Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+					Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 					AsyncTask(ENamedThreads::GameThread, [this, RandomLoc, Params]() {
-						AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(CubeClass, RandomLoc.Location + FVector(0.f, 0.f, 96.f), GetActorRotation(), Params);
+						AZEnemy* SpawnedActor = GetWorld()->SpawnActor<AZEnemy>(CubeClass, RandomLoc.Location + FVector(0.f, 0.f, 96.f), GetActorRotation(), Params);
+						if (SpawnedActor)
+						{
+							SpawnedActor->SetManager(Manager);
+							Manager->EnemyCount += 1;
+						}
 						});
 				}	
 			}
@@ -182,6 +184,12 @@ void AZSpawn::AllSpawn(int num)
 
 }
 
+void AZSpawn::BeginSpawn(int32 InNum)
+{
+	bCanSpawn = true;
+	TotalZombies = InNum;
+}
+
 
 
 
@@ -189,31 +197,54 @@ void AZSpawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	//UE_LOG(LogTemp, Error, TEXT("Name: %s, Valid %d"), *GetName(), IsValidSpawner);
-	if (CurrentlyOverlappingActors.Num() == 0) return;
-
-	for (AActor* Actor : CurrentlyOverlappingActors)
+	if (bCanSpawn)
 	{
+		if (TotalZombies <= 0)
+		{
+			bCanSpawn = false;
+			return;
+		}
+		CurrentSpawnTime += DeltaTime;
+		if (CurrentSpawnTime >= SpawnDelay)
+		{
+			FActorSpawnParameters Params;
+			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		if (IsValid(Actor))
-		{	
-	
-			Dist = DistanceCalc(Actor->GetActorLocation(), GetActorLocation());
-
-			if ((!CheckLos(GetActorLocation(), Actor->GetActorLocation())) && (Dist>400)) {
-				
-				IsValidSpawner = true;
-
+			AZEnemy* SpawnedActor = GetWorld()->SpawnActor<AZEnemy>(CubeClass, GetActorLocation() + FVector(0.f, 0.f, 96.f), GetActorRotation(), Params);
+			if (SpawnedActor)
+			{
+				SpawnedActor->SetManager(Manager);
+				Manager->EnemyCount += 1;
+				TotalZombies--;
 			}
-			else {
-				IsValidSpawner = false;
-				
-				break;
-				
-			}
+			CurrentSpawnTime = 0.f;
 		}
 	}
-			//UE_LOG(LogTemp, Error, TEXT("FOUND %s ACTOR: %d"),*GetName(), IsValidSpawner);
+
+	////UE_LOG(LogTemp, Error, TEXT("Name: %s, Valid %d"), *GetName(), IsValidSpawner);
+	//if (CurrentlyOverlappingActors.Num() == 0) return;
+
+	//for (AActor* Actor : CurrentlyOverlappingActors)
+	//{
+
+	//	if (IsValid(Actor))
+	//	{	
+	//		Dist = DistanceCalc(Actor->GetActorLocation(), GetActorLocation());
+
+	//		if ((!CheckLos(GetActorLocation(), Actor->GetActorLocation())) && (Dist>400)) {
+	//			
+	//			IsValidSpawner = true;
+
+	//		}
+	//		else {
+	//			IsValidSpawner = false;
+	//			
+	//			break;
+	//			
+	//		}
+	//	}
+	//}
+	//UE_LOG(LogTemp, Error, TEXT("FOUND %s ACTOR: %d"),*GetName(), IsValidSpawner);
 
 }
 

@@ -4,8 +4,10 @@
 #include "GameFramework/Actor.h"
 #include "ZSpawn.generated.h"
 
+class AZEnemy;
 class USphereComponent; 
 class UZSpawnManager;
+class AZEnemyManager;
 
 UCLASS()
 class PROJECTZ_API AZSpawn : public AActor
@@ -22,10 +24,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AllSpawn(int num);
 
+
+	void BeginSpawn(int32 InNum);
+	__inline void SetManager(AZEnemyManager* InManager) { Manager = InManager; }
+
 protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Values")
-	TSubclassOf<AActor> CubeClass;
+	TSubclassOf<AZEnemy> CubeClass;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USphereComponent* SphereComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Values")
@@ -33,9 +39,16 @@ protected:
 
 private:
 
+	bool bCanSpawn;
+	UPROPERTY(EditAnywhere, Category="Values", meta=(AllowPrivateAccess = true))
+	float SpawnDelay;
+	float CurrentSpawnTime;
+	int32 TotalZombies;
+
 	int SpawnedCount;
 	int SpawnBatchSize;
 
+	AZEnemyManager* Manager;
 
 	UPROPERTY()
 	TSet<AActor*> CurrentlyOverlappingActors;

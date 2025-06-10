@@ -100,6 +100,8 @@ void ASPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASPlayer::PerformMove);
 		
 		EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASPlayer::Look);
+		EIC->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ASPlayer::Sprint);
+		EIC->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASPlayer::Sprint);
 
 		//EIC->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		//EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
@@ -154,9 +156,12 @@ void ASPlayer::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 void ASPlayer::PerformMove(const FInputActionValue& Value)
 {	
 	FVector2D Direction = Value.Get<FVector2D>();
-	if (Direction.Size() > 0.01f)
+	if (Direction.Size() > 0.01f && MoveComp)
 	{
 		FVector DirectionVector = GetActorForwardVector() * Direction.X + GetActorRightVector() * Direction.Y;
+		if(bSprint)
+		MoveComp->AddMovement(DirectionVector, EMoveState::Run);
+		else
 		MoveComp->AddMovement(DirectionVector, EMoveState::Walk);
 	}
 }
@@ -173,6 +178,12 @@ void ASPlayer::Look(const FInputActionValue& Value)
 	
 	if(!HasAuthority())
 	Server_Look(LookValue);
+}
+
+void ASPlayer::Sprint(const FInputActionValue& Value)
+{
+	bool bValue = Value.Get<bool>();
+	bSprint = bValue;
 }
 
 void ASPlayer::Server_Look_Implementation(FVector2D LookVal)
@@ -326,10 +337,4 @@ void ASPlayer::UpdateAnimInstanceMontage(UAnimMontage* InMontage)
 {
 	if (AnimInst)
 		AnimInst->UpdateAnimMontage(InMontage);
-}
-
-void ASPlayer::AddQuestDescription(FQuestDescription InDescription)
-{
-	if (PlayerHUD)
-		PlayerHUD->AddQuestDescription(InDescription);
 }

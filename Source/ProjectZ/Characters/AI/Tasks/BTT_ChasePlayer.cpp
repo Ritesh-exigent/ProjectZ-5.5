@@ -25,7 +25,7 @@ EBTNodeResult::Type UBTT_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	}
 	TargetActor = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(GetSelectedBlackboardKey()));
 
-	PlayerPawn = Cast<ASPlayer>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+	//PlayerPawn = Cast<ASPlayer>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 	if(!TargetActor)//!PlayerPawn)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("TargetActor is nullptr"));
@@ -69,6 +69,8 @@ void UBTT_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 	{
 		if (!CalcPath())
 			FinishLatentTask(OwnerComp, EBTNodeResult::Aborted);
+		else
+			ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
 	}
 	else
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
@@ -76,7 +78,7 @@ void UBTT_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 	{
 		CurrentPathIndex++;
 		CurrentPathPoint = PathPoints[CurrentPathIndex];
-		//CurrentPathPoint.Z += 96.f;
+		CurrentPathPoint.Z += 96.f;
 		ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
 		//FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
@@ -94,7 +96,8 @@ bool UBTT_ChasePlayer::CalcPath()
 			CurrentPathIndex = 1;
 			CurrentPathPoint = PathPoints[CurrentPathIndex];
 			CurrentPathPoint.Z += 96.f;
-			//ZController->RequestAIMovement(CurrentPathPoint, NMoveStatus::EMoveState::Walk, AcceptRadius);
+			//UE_LOG(LogTemp, Warning, TEXT("FoundPath!"));
+			//ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
 			return true;
 		}
 	}

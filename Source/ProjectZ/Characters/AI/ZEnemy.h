@@ -29,26 +29,34 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category="Settings | Components")
 	UPerceptionComponent* PerceptionComp;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
 	TArray<TSubclassOf<AAmmunition>> Drops;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
 	TArray<UAnimMontage*> AttackMontages;
+	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
+	TSubclassOf<AZAIController> ControllerClass;
 
 public:
 		
 	UFUNCTION(BlueprintCallable)
 	AZEnemyManager* GetManager() { return Manager; };
 
+	__inline void SetManager(AZEnemyManager* InManager) { Manager = InManager; }
+
 	void Attack(bool bOverride);
 
 	__inline UBehaviorTree* GetBehaviorTree() { return BTAsset; }
 	UFUNCTION(BlueprintCallable)
 	UPerceptionComponent* GetPerceptionComponent() { return PerceptionComp; }
+	UFUNCTION(BlueprintImplementableEvent)
+	void StartDestroy();
 
 	UFUNCTION()
 	void OnDeath();
+
+	//..........................
+	void Reset();
+	void Init();
 
 private:
 
@@ -64,6 +72,7 @@ private:
 	void DropAmmunitions();
 	void InitDestroy();
 	void PlayAttackMontage(bool bOverride);
+	UFUNCTION()
 	void OnMontageEnded(UAnimMontage* InMontage, bool bInterrupted);
 
 	UFUNCTION(NetMulticast, Reliable)

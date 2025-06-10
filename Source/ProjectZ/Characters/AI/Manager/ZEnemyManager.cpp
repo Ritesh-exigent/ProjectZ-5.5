@@ -5,8 +5,9 @@
 #include "NavigationSystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "./ProjectZ/GameModes/ZGameMode.h"
-#include "../Spawn/ZSpawnManager.h"
+#include "../Spawn/ZSpawnManager.h" //tbd
 #include "./ProjectZ/GameStates/ZGameState.h"
+#include "../Spawn/ZSpawn.h"
 
 // Sets default values
 AZEnemyManager::AZEnemyManager()
@@ -40,6 +41,8 @@ void AZEnemyManager::BeginPlay()
 
 	ZGameState = GetWorld()->GetAuthGameMode()->GetGameState<AZGameState>();
 
+	//................
+	InitPools();
 }
 
 void AZEnemyManager::Tick(float DeltaTime)
@@ -136,13 +139,84 @@ void AZEnemyManager::FinishWave()
 	PrepareNextWave();
 }
 
+void AZEnemyManager::DispatchSpawn()
+{
+	if (Spawners.Num() <= 0)
+		return;
+
+	int32 ZombiesPerSpawn = MaxEnemies / Spawners.Num();
+	for (TSoftObjectPtr<AZSpawn> SpawnPoint : Spawners)
+	{
+		if (SpawnPoint)
+		{
+			SpawnPoint->SetManager(this);
+			SpawnPoint->BeginSpawn(ZombiesPerSpawn);
+		}
+		else
+			GLog->Log("SpawnPoint is null");
+	}
+}
+
+void AZEnemyManager::InitPools()
+{
+	if (EnemyPoolInfo.IsEmpty())
+	{
+		GLog->Log(ELogVerbosity::Error, TEXT("EnemyPoolInfo is empty in enemy manager BP"));
+		return;
+	}
+	FActorSpawnParameters ASP;
+	ASP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	for (FEnemyPoolInfo PoolInfo : EnemyPoolInfo)
+	{
+		if (!PoolInfo.EnemyClass)
+		{
+			GLog->Logf(ELogVerbosity::Fatal, TEXT("Pool Enemy class is nullptr for id: %d"), PoolInfo.PoolID);
+			continue;
+		}
+
+		if (!Pools.Contains(PoolInfo.PoolID))
+		{
+			Pools.Add(PoolInfo.PoolID, MakeUnique<TQueue<AZEnemy*>>());
+		}
+
+		for (int32 i = 0; i < PoolInfo.PoolSize;)
+		{
+			AZEnemy* Enemy = GetWorld()->SpawnActor<AZEnemy>(PoolInfo.EnemyClass, FVector(0.f, 0.f, -1000.f), FRotator::ZeroRotator, ASP);
+			if (Enemy)
+			{
+				//Enemy->SetActorHiddenInGame(true);
+				Pools[PoolInfo.PoolID]->Enqueue(Enemy);
+				++i;
+			}
+		}
+	}
+}
+
+AZEnemy* AZEnemyManager::SpawnFromPool(int32 ID, FVector Location, FRotator Rotation)
+{
+	if (Pools.Contains(ID) && !Pools[ID]->IsEmpty())
+	{
+		AZEnemy* SpawnedEnemy = nullptr;
+		if (Pools[ID]->Dequeue(SpawnedEnemy))
+		{
+			SpawnedEnemy->Init();
+			SpawnedEnemy->SetActorLocation(Location);
+			SpawnedEnemy->SetActorRotation(Rotation);
+			//activate enemy
+			return SpawnedEnemy;
+		}
+	}
+	return nullptr;
+}
+
 void AZEnemyManager::OnDeath(AActor* Initiator)
 {
 	UE_LOG(LogTemp, Warning, TEXT("onDeath Called by: %s"), *Initiator->GetName());
 	--EnemyCount;
 	if (EnemyCount <= SpawnOtherOnRemaining && WaveNumEnemies > 0 )
 	{
-		AsyncTask(ENamedThreads::GameThread, [this]() {SpawnEnemies(); });
+		SpawnEnemies();
+		//AsyncTask(ENamedThreads::GameThread, [this]() {SpawnEnemies(); });
 	}
 	if (EnemyCount <= 0)
 	{
@@ -153,7 +227,14 @@ void AZEnemyManager::OnDeath(AActor* Initiator)
 
 void AZEnemyManager::InitEnemies()
 {
-	bCanSpawnEnemies = true;
-	PrepareNextWave();
+	DispatchSpawn();
+	/*bCanSpawnEnemies = true;
+	PrepareNextWave();*/
+}
+
+void AZEnemyManager::SetSpawners(TArray<AZSpawn*> InSpawners)
+{
+	Spawners.Empty();
+	//Spawners = InSpawners;
 }
 

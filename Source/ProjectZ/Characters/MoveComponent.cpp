@@ -3,6 +3,7 @@
 
 #include "MoveComponent.h"
 #include "BaseCharacter.h"
+#include "DrawDebugHelpers.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
@@ -171,6 +172,7 @@ void UMoveComponent::AddMovement(FVector Direction, EMoveState InState)
 			Speed = MaxRunSpeed;
 		else
 			Speed = MaxWalkSpeed;
+
 		//Speed = 600.f;
 		//UE_LOG(LogTemp, Warning, TEXT("On Server %s: Speed: %f, MRS: %f, MWS: %f"), *GetOwner()->GetName(), Speed, MaxRunSpeed, MaxWalkSpeed);
 		if (NetDirection.Size() > 1.f)
@@ -269,5 +271,3 @@ void UMoveComponent::UpdateMovement(float DeltaTime)
 		//UE_LOG(LogTemp, Warning, TEXT("%s, Player Update Called"), *GetOwner()->GetName());
 	}
 }
-
-

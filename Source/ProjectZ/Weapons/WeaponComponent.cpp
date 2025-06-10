@@ -146,6 +146,8 @@ void UWeaponComponent::UseWeapon(bool bInValue)
 
 bool UWeaponComponent::AddAmmo(int32 Amount)
 {
+	if (!CurrentWeapon) return false;
+
 	if (GetOwnerRole() == ROLE_Authority)
 	{
 		if (CurrentWeapon)

@@ -22,25 +22,29 @@ AZEnemy::AZEnemy()
 void AZEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+	ZController = GetWorld()->SpawnActor<AZAIController>(ControllerClass);//Cast<AZAIController>(GetController());
+	if (ZController)
+		ZController->Possess(this);
 
-	ZController = Cast<AZAIController>(GetController());
 	AnimInst = Cast<UZAnimInstance>(SKMesh->GetAnimInstance());
 	if (AnimInst)
+	{
 		AnimInst->OnMontageEnded.AddDynamic(this, &AZEnemy::OnMontageEnded);
+	}
 	if (MoveComp)
 	{
 		MoveComp->SetIsControllingAI(true);
 	}
 	if (HDComp)
 		HDComp->OnDeath.BindUFunction(this, TEXT("OnDeath"));
+	
+	Reset();
 }
 
 // Called every frame
 void AZEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (!ZController)
-		ZController = Cast<AZAIController>(GetController());
 	/*if (GetController())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s ->AIC : %s"), *GetName(), *GetController()->GetName());
@@ -53,7 +57,11 @@ void AZEnemy::InitDestroy()
 	{
 		DropAmmunitions();
 		Manager->OnDeath(this);
-		//play death animation
+		StartDestroy();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Manger Null in enemy"));
 	}
 }
 
@@ -70,6 +78,7 @@ void AZEnemy::PlayAttackMontage(bool bOverride)
 
 void AZEnemy::OnMontageEnded(UAnimMontage* InMontage, bool bInterrupted)
 {
+	//UE_LOG(LogTemp, Warning, TEXT("Attack Ended"));
 	if (InMontage)
 		GetMoveComponent()->PauseMovement(false);
 }
@@ -81,7 +90,8 @@ void AZEnemy::NetMulticast_PlayAttackMontage_Implementation(bool bOverride)
 
 void AZEnemy::DropAmmunitions()
 {	
-	if (FMath::RandRange(0, 5) < 4)
+	UE_LOG(LogTemp, Warning, TEXT("Drop Ammo"));
+	if (FMath::RandRange(0, 10) < 2)
 		return;
 
 	for (auto AmmoClass : Drops)
@@ -109,7 +119,27 @@ void AZEnemy::OnDeath()
 	{	
 		ZController->StopBehaviorTree();
 		MoveComp->AbortAIMovement();
+		InitDestroy();
 		UE_LOG(LogTemp, Warning, TEXT("Enemy Died!"));
 	}
-	InitDestroy();
+}
+
+void AZEnemy::Reset()
+{
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
+	SetActorEnableCollision(false);
+
+	if(ZController)
+	ZController->UnPossess();
+}
+
+void AZEnemy::Init()
+{
+	SetActorHiddenInGame(false);
+	SetActorTickEnabled(true);
+	SetActorEnableCollision(true);
+
+	if (ZController)
+		ZController->Possess(this);
 }
