@@ -28,7 +28,7 @@ EBTNodeResult::Type UBTT_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	//PlayerPawn = Cast<ASPlayer>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 	if(!TargetActor)//!PlayerPawn)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("TargetActor is nullptr"));
+		//UE_LOG(LogTemp, Warning, TEXT("TargetActor is nullptr"));
 		return EBTNodeResult::Failed;
 	}
 

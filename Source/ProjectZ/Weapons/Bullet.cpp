@@ -10,6 +10,9 @@
 #include "./ProjectZ/Characters/Player/SPlayer.h"
 #include "./ProjectZ/Characters/AI/ZEnemy.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogBullet, Log, All);
+DEFINE_LOG_CATEGORY(LogBullet);
+
 ABullet::ABullet()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -59,24 +62,22 @@ void ABullet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 
 void ABullet::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Bullet overlapped!"));
+	UE_LOG(LogBullet, Warning, TEXT("Bullet overlapped!"));
 	if (HasAuthority())
 	{
 		//DrawDebugSphere(GetWorld(), GetActorLocation(), 40.f, 6, FColor::Blue, false, 10.f);
-		if(!(OtherActor->IsA<ASPlayer>()) && !(OtherActor->IsA<ABullet>()))
+		UE_LOG(LogBullet, Warning, TEXT("Bullet Hit : %s"), *OtherActor->GetName());
+		if (OtherActor->ActorHasTag(FName("Enemy")))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Bullet Hit : %s"), *OtherActor->GetName());
-			if (OtherActor->IsA<AZEnemy>())
-			{
-				AZEnemy* Enemy = Cast<AZEnemy>(OtherActor);
-				Enemy->GetHDComponent()->TakeDamage(Damage);
-			}
-			Destroy();
+			AZEnemy* Enemy = Cast<AZEnemy>(OtherActor);
+			if(Enemy)
+			Enemy->GetHDComponent()->TakeDamage(Damage);
 		}
+		Destroy(true);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("bullet has no authority"));
+		UE_LOG(LogBullet, Warning, TEXT("bullet has no authority"));
 	}
 }
 

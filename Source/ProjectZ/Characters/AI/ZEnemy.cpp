@@ -15,7 +15,7 @@ AZEnemy::AZEnemy()
 	PrimaryActorTick.bCanEverTick = true;
 
 	PerceptionComp = CREATE(UPerceptionComponent, "PerceptionComponent");
-
+	Tags.Add(FName("Enemy"));
 }
 
 // Called when the game starts or when spawned
@@ -37,8 +37,8 @@ void AZEnemy::BeginPlay()
 	}
 	if (HDComp)
 		HDComp->OnDeath.BindUFunction(this, TEXT("OnDeath"));
-	
-	Reset();
+	//UE_LOG(LogTemp, Warning, TEXT("BeginPlay Called!"));
+	//Reset();
 }
 
 // Called every frame
@@ -55,9 +55,17 @@ void AZEnemy::InitDestroy()
 {
 	if (Manager)
 	{
+		SetActorEnableCollision(false);
 		DropAmmunitions();
 		Manager->OnDeath(this);
-		StartDestroy();
+		//StartDestroy();
+		FTimerHandle DestroyTimeHandle;
+		GetWorld()->GetTimerManager().SetTimer(DestroyTimeHandle, [this]() {
+			SetActorLocation(FVector(0.f, 0.f, -1000.f));
+			SetActorRotation(FRotator(0.f));
+			Manager->AddToPool(PoolID, this);
+			Reset();
+			}, 0.01f, false, 5.f);
 	}
 	else
 	{

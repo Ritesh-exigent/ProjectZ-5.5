@@ -25,17 +25,14 @@ AZSpawn::AZSpawn()
 	SphereComponent->InitSphereRadius(MaxSpawningRadius);
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	SphereComponent->SetCollisionProfileName(TEXT("Pawn"));
-	
 }
 
 
 void AZSpawn::BeginPlay()
 {
 	Super::BeginPlay();
-
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AZSpawn::OnSphereOverlapBegin);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &AZSpawn::OnSphereOverlapEnd);
-		
 }
 
 void AZSpawn::OnSphereOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -45,8 +42,6 @@ void AZSpawn::OnSphereOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* 
 		CurrentlyOverlappingActors.Add(OtherActor);
 		IsValidSpawner = false;
 	}
-
-	
 }
 
 void AZSpawn::OnSphereOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -104,29 +99,29 @@ float AZSpawn::DistanceCalc(FVector Start, FVector End)
 void AZSpawn::SpawnZombie(int NumToSpawn)
 {
 	
-	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
-	if (NavSys)
-	{
-		//todo- async loop
-			for (int i = 0; i < NumToSpawn; i++) {
+	//UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	//if (NavSys)
+	//{
+	//	//todo- async loop
+	//		for (int i = 0; i < NumToSpawn; i++) {
 
-				FNavLocation RandomLoc;
-				if (NavSys->GetRandomPointInNavigableRadius(GetActorLocation(), MaxSpawningRadius, RandomLoc))
-				{
-					FActorSpawnParameters Params;
-					Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	//			FNavLocation RandomLoc;
+	//			if (NavSys->GetRandomPointInNavigableRadius(GetActorLocation(), MaxSpawningRadius, RandomLoc))
+	//			{
+	//				FActorSpawnParameters Params;
+	//				Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-					AsyncTask(ENamedThreads::GameThread, [this, RandomLoc, Params]() {
-						AZEnemy* SpawnedActor = GetWorld()->SpawnActor<AZEnemy>(CubeClass, RandomLoc.Location + FVector(0.f, 0.f, 96.f), GetActorRotation(), Params);
-						if (SpawnedActor)
-						{
-							SpawnedActor->SetManager(Manager);
-							Manager->EnemyCount += 1;
-						}
-						});
-				}	
-			}
-	}
+	//				AsyncTask(ENamedThreads::GameThread, [this, RandomLoc, Params]() {
+	//					AZEnemy* SpawnedActor = GetWorld()->SpawnActor<AZEnemy>(CubeClass, RandomLoc.Location + FVector(0.f, 0.f, 96.f), GetActorRotation(), Params);
+	//					if (SpawnedActor)
+	//					{
+	//						SpawnedActor->SetManager(Manager);
+	//						Manager->EnemyCount += 1;
+	//					}
+	//					});
+	//			}	
+	//		}
+	//}
 
 }
 
@@ -207,45 +202,20 @@ void AZSpawn::Tick(float DeltaTime)
 		CurrentSpawnTime += DeltaTime;
 		if (CurrentSpawnTime >= SpawnDelay)
 		{
-			FActorSpawnParameters Params;
-			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AZEnemy* SpawnedActor = GetWorld()->SpawnActor<AZEnemy>(CubeClass, GetActorLocation() + FVector(0.f, 0.f, 96.f), GetActorRotation(), Params);
-			if (SpawnedActor)
+			UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+			if (NavSys)
 			{
-				SpawnedActor->SetManager(Manager);
-				Manager->EnemyCount += 1;
-				TotalZombies--;
+				FNavLocation RandomLoc;
+				if (NavSys->GetRandomPointInNavigableRadius(GetActorLocation(), MaxSpawningRadius, RandomLoc))
+				{
+					int32 ID = FMath::RandRange(PoolIDRange.X, PoolIDRange.Y);
+					Manager->SpawnFromPool(ID, RandomLoc.Location+ FVector(0.f, 0.f, 96.f));
+					TotalZombies--;
+				}
 			}
 			CurrentSpawnTime = 0.f;
 		}
 	}
-
-	////UE_LOG(LogTemp, Error, TEXT("Name: %s, Valid %d"), *GetName(), IsValidSpawner);
-	//if (CurrentlyOverlappingActors.Num() == 0) return;
-
-	//for (AActor* Actor : CurrentlyOverlappingActors)
-	//{
-
-	//	if (IsValid(Actor))
-	//	{	
-	//		Dist = DistanceCalc(Actor->GetActorLocation(), GetActorLocation());
-
-	//		if ((!CheckLos(GetActorLocation(), Actor->GetActorLocation())) && (Dist>400)) {
-	//			
-	//			IsValidSpawner = true;
-
-	//		}
-	//		else {
-	//			IsValidSpawner = false;
-	//			
-	//			break;
-	//			
-	//		}
-	//	}
-	//}
-	//UE_LOG(LogTemp, Error, TEXT("FOUND %s ACTOR: %d"),*GetName(), IsValidSpawner);
-
 }
 
 

@@ -53,9 +53,12 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category="Settings | Enemies")
 	TArray<FEnemyPoolInfo> EnemyPoolInfo;
+	UPROPERTY(EditAnywhere, Category="Settings | Enemies")
+	TSubclassOf<AZSpawn> SpawnClass;
 
 	TMap<int32, TUniquePtr<TQueue<AZEnemy*>>>Pools;
-	
+	TArray<AZSpawn*> Spawns;
+
 	UPROPERTY(EditAnywhere, Category="Settings | Values")
 	int32 MaxEnemies;
 	UPROPERTY(EditAnywhere, Category="Settings | Values")
@@ -106,4 +109,5 @@ public:
 	//........................................
 	UFUNCTION(BlueprintCallable)
 	AZEnemy* SpawnFromPool(int32 ID, FVector Location, FRotator Rotation = FRotator::ZeroRotator);
+	void AddToPool(int32 ID, AZEnemy* InEnemy);
 };

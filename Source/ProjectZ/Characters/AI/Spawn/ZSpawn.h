@@ -30,8 +30,6 @@ public:
 
 protected:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Values")
-	TSubclassOf<AZEnemy> CubeClass;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USphereComponent* SphereComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Values")
@@ -39,9 +37,11 @@ protected:
 
 private:
 
-	bool bCanSpawn;
+	UPROPERTY(EditAnywhere, Category="Values", meta=(AllowPrivateAccess = true))
+	FIntVector2 PoolIDRange;
 	UPROPERTY(EditAnywhere, Category="Values", meta=(AllowPrivateAccess = true))
 	float SpawnDelay;
+	bool bCanSpawn;
 	float CurrentSpawnTime;
 	int32 TotalZombies;
 

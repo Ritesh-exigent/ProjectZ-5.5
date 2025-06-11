@@ -47,7 +47,7 @@ void UZAnimInstance::UpdateAnimState()
 	}
 
 	Speed = Owner->GetMoveComponent()->GetServerSpeed();
-	//bIsDead = Owner->IsDead();
+	bIsDead = Owner->IsDead();
 	//UE_LOG(LogTemp, Warning, TEXT("Anim IsDead: %d"), bIsDead);
 }
 

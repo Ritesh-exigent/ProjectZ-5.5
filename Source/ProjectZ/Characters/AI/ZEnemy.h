@@ -41,6 +41,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	AZEnemyManager* GetManager() { return Manager; };
 
+	__inline void SetPoolID(int32 InID) { PoolID = InID; }
 	__inline void SetManager(AZEnemyManager* InManager) { Manager = InManager; }
 
 	void Attack(bool bOverride);
@@ -65,6 +66,7 @@ private:
 
 	UZAnimInstance* AnimInst;
 
+	int32 PoolID;
 	AZAIController* ZController;
 	AZEnemyManager* Manager;
 	friend class AZEnemyManager;
