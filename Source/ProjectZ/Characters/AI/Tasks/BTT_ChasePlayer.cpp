@@ -23,6 +23,13 @@ EBTNodeResult::Type UBTT_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerC
 		UE_LOG(LogTemp, Warning, TEXT("Controller is nullptr"));
 		return EBTNodeResult::Failed;
 	}
+	/*if (bForceChase)
+	{
+		int32 NumPlayers = GetWorld()->GetNumPlayerControllers();
+		int32 RandomPlayer = FMath::RandRange(0, NumPlayers-1);
+		TargetActor = UGameplayStatics::GetPlayerPawn(GetWorld(), RandomPlayer);
+	}
+	else*/
 	TargetActor = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(GetSelectedBlackboardKey()));
 
 	//PlayerPawn = Cast<ASPlayer>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));

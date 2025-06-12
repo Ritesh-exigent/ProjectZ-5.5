@@ -26,6 +26,8 @@ protected:
 
 private:
 
+	/*UPROPERTY(EditAnywhere, Category = "Settings | Values")
+	bool bForceChase;*/
 	UPROPERTY(EditAnywhere, Category = "Settings | Values")
 	float AcceptRadius;
 
