@@ -206,10 +206,10 @@ void AZSpawn::Tick(float DeltaTime)
 			if (NavSys)
 			{
 				FNavLocation RandomLoc;
-				if (NavSys->GetRandomPointInNavigableRadius(GetActorLocation(), MaxSpawningRadius, RandomLoc))
+				if (NavSys->GetRandomReachablePointInRadius(GetActorLocation(), MaxSpawningRadius, RandomLoc))
 				{
 					int32 ID = FMath::RandRange(PoolIDRange.X, PoolIDRange.Y);
-					Manager->SpawnFromPool(ID, RandomLoc.Location+ FVector(0.f, 0.f, 96.f));
+					Manager->SpawnFromPool(ID, RandomLoc.Location+ FVector(0.f, 0.f, 120.f));
 					TotalZombies--;
 				}
 			}

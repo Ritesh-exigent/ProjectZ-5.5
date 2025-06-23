@@ -18,6 +18,7 @@ UMoveComponent::UMoveComponent()
 	bIsOwnerAI = false;
 	bCanAIMove = false;
 	MoveState = EMoveState::Idle;
+	MoveResult = EMoveResult::None;
 	bOrientRotationToMovement = true;
 }
 
@@ -41,7 +42,21 @@ void UMoveComponent::BeginPlay()
 void UMoveComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	UpdateMovement(DeltaTime);
+	if(GetOwnerRole()==ROLE_Authority)
+	{
+		UpdateMovement(DeltaTime);
+		/*if (bIsOwnerAI)
+		{
+			if(GetOwnerRole() == ROLE_Authority)
+			{
+				UE_LOG(LogTemp, Warning, TEXT(" Name: %s, Role SERVER,MoveResult: %d"), *GetOwner()->GetName(), MoveResult);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT(" Name: %s, Role LOCAL,MoveResult: %d"), *GetOwner()->GetName(), MoveResult);
+			}
+		}*/
+	}
 }
 
 void UMoveComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -139,6 +154,8 @@ void UMoveComponent::ApplyMovement(float DeltaTime)
 		GetOwner()->AddActorWorldOffset(NetMove, true, &ProjectionHit);
 	}
 
+
+
 	SpeedOnServer = Speed;
 	DirectionOnServer = CalculateDirectionAngle(CurrentDirection);
 	LocationOnServer = GetOwner()->GetActorLocation();
@@ -155,11 +172,19 @@ void UMoveComponent::ResetDirection(float DeltaTime)
 
 void UMoveComponent::HandleOverallMovement(float DeltaTime)
 {
-	if (bPauseMovement) return;
+	if (!bPauseMovement)
+	{
+		InterpDirection(DeltaTime);
+		ApplyMovement(DeltaTime);
+		ResetDirection(DeltaTime);
+	}
 
-	InterpDirection(DeltaTime);
-	ApplyMovement(DeltaTime);
-	ResetDirection(DeltaTime);
+	//if (!bIsOwnerAI)
+	{
+		FHitResult GravityHit;
+		GetOwner()->AddActorWorldOffset(FVector(0.f, 0.f, -980 * DeltaTime), true, &GravityHit);
+	}
+
 }
 
 void UMoveComponent::AddMovement(FVector Direction, EMoveState InState)
@@ -220,6 +245,7 @@ void UMoveComponent::CheckAIMoveResult()
 		SpeedOnServer = 0.f;
 		Speed = 0.f;
 	}
+	//UE_LOG(LogTemp, Warning, TEXT("Distance: %f"), Distance);
 }
 
 float UMoveComponent::CalculateDirectionAngle(FVector InDirection)
@@ -233,8 +259,8 @@ float UMoveComponent::CalculateDirectionAngle(FVector InDirection)
 		Direction = 1.f;
 
 	FVector Start = GetOwner()->GetActorLocation();
-	DrawDebugLine(GetWorld(), Start, Start + GetOwner()->GetActorForwardVector() * 500.f, FColor::Red, false, 0.01f);
-	DrawDebugLine(GetWorld(), Start, Start + InDirection * 500.f, FColor::Blue, false, 0.01f);
+	//DrawDebugLine(GetWorld(), Start, Start + GetOwner()->GetActorForwardVector() * 500.f, FColor::Red, false, 0.01f);
+	//DrawDebugLine(GetWorld(), Start, Start + InDirection * 500.f, FColor::Blue, false, 0.01f);
 	float Angle = FMath::RadiansToDegrees(FMath::Atan2(Cross.Length(), Dot));
 	return Angle * -Direction;
 }

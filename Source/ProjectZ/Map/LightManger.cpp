@@ -69,7 +69,7 @@ void ALightManger::LightsToggleAll()
 			}
 		}
 	}
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ALightManger::ToggleLight, 1.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ALightManger::ToggleLight, 5.0f, false);
 }
 
 void ALightManger::ToggleLight()
@@ -153,7 +153,7 @@ void ALightManger::MainRoomFinalize()
 		if (SpotLight)
 		{
 			if (!SpotLight->ActorHasTag("GaurdLight") && SpotLight->ActorHasTag("MainLight")) {
-				SpotLight->GetLightComponent()->SetIntensity(1.0f);
+				SpotLight->GetLightComponent()->SetIntensity(3.0f);
 			
 				SpotLight->GetLightComponent()->LightFunctionMaterial = nullptr;
 				SpotLight->GetLightComponent()->MarkRenderStateDirty();

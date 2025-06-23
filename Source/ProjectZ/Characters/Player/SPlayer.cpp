@@ -78,8 +78,8 @@ void ASPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (MoveComp)
-		MoveComp->UpdateMovement(DeltaTime);
+	/*if (MoveComp)
+		MoveComp->UpdateMovement(DeltaTime);*/
 	/*if (HasAuthority())
 	{
 		MoveUpdate(DeltaTime);

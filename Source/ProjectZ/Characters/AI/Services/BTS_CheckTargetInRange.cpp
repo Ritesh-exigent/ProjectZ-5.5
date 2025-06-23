@@ -18,7 +18,9 @@ void UBTS_CheckTargetInRange::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 		AActor* TargetActor = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TargetActorKey.SelectedKeyName));
 		if (TargetActor)
 		{
-			if (FVector::Dist(TargetActor->GetActorLocation(), ZController->GetPawn()->GetActorLocation()) < ActiveRange)
+			float Distance = FVector::Dist(TargetActor->GetActorLocation(), ZController->GetPawn()->GetActorLocation());
+			//UE_LOG(LogTemp, Warning, TEXT("Distance: %f"), Distance);
+			if ( Distance < ActiveRange)
 			{
 				OwnerComp.GetBlackboardComponent()->SetValueAsBool(GetSelectedBlackboardKey(), true);
 			}

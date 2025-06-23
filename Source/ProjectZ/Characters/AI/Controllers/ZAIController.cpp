@@ -6,6 +6,7 @@
 #include "./ProjectZ/Characters/AI/ZEnemy.h"
 #include "../Perception/PerceptionComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
+#include "Components/CapsuleComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "ProjectZ/Characters/MoveComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
@@ -84,6 +85,13 @@ void AZAIController::PauseMovement(bool InValue)
 {
 	if (Z_Pawn)
 		Z_Pawn->GetMoveComponent()->PauseMovement(InValue);
+}
+
+float AZAIController::GetEnemyHalfHeight()
+{
+	if (Z_Pawn)
+		return Z_Pawn->GetDefaultHalfHeight();
+	return 0.0f;
 }
 
 void AZAIController::Attack(bool bOverride)

@@ -38,6 +38,7 @@ void AZEnemyManager::BeginPlay()
 
 	TArray<AActor*> FoundSpawners;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), SpawnClass, FoundSpawners);
+	UE_LOG(LogTemp, Warning, TEXT("SPawners Num: %d"), FoundSpawners.Num());
 	for (AActor* Actor : FoundSpawners)
 	{
 		AZSpawn* Spawn = Cast<AZSpawn>(Actor);
@@ -139,10 +140,16 @@ void AZEnemyManager::PrepareNextWave()
 		if (Spawns.Num() <= 0)
 			return;
 
-		int32 TotalNum = WaveNumEnemies / Spawns.Num();
+		int32 HalfNum = WaveNumEnemies / Spawns.Num();
+		int32 TotalNum = WaveNumEnemies;
+		if (HalfNum <= 0)
+			HalfNum = TotalNum;
+		UE_LOG(LogTemp, Warning, TEXT("HalfNum: %d"), HalfNum);
 		for (AZSpawn* Spawn : Spawns)
 		{
-			Spawn->BeginSpawn(TotalNum);
+			Spawn->BeginSpawn(HalfNum);
+			if((TotalNum - HalfNum) >= 0)
+			TotalNum -= HalfNum;
 		}
 	}, 0.1f, false, WaveCooldownTimer);
 	UE_LOG(LogTemp, Warning, TEXT("WaveNum: %d, EnemyNum: %d"), Wave, WaveNumEnemies);
@@ -211,7 +218,10 @@ void AZEnemyManager::InitPools()
 
 				if(Pools[PoolInfo.PoolID]->Enqueue(Enemy))
 				{
-					Enemy->Reset();
+					FTimerHandle EnemyHandle;
+					GetWorld()->GetTimerManager().SetTimer(EnemyHandle, [Enemy]() {
+						Enemy->Reset();
+						}, 0.1f, false, 2.f);
 					Enemy->SetPoolID(PoolInfo.PoolID);
 					++i;
 				}
@@ -265,7 +275,7 @@ void AZEnemyManager::OnDeath(AActor* Initiator)
 
 void AZEnemyManager::InitEnemies()
 {
-	bCanSpawnEnemies = true;
+	//bCanSpawnEnemies = true;
 	PrepareNextWave();
 }
 

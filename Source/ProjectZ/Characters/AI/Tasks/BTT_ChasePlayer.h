@@ -31,6 +31,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Settings | Values")
 	float AcceptRadius;
 
+	float HalfHeight;
 	int32 CurrentPathIndex;
 	FVector TargetLocation;
 	FVector CurrentPathPoint;

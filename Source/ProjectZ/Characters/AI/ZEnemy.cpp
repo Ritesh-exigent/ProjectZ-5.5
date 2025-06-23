@@ -12,8 +12,9 @@
 AZEnemy::AZEnemy()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-
+	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+	SetReplicateMovement(true);
 	PerceptionComp = CREATE(UPerceptionComponent, "PerceptionComponent");
 	Tags.Add(FName("Enemy"));
 }
@@ -140,6 +141,9 @@ void AZEnemy::Reset()
 
 	if(ZController)
 	ZController->UnPossess();
+
+	if (MoveComp)
+		MoveComp->SetComponentTickEnabled(false);
 }
 
 void AZEnemy::Init()
@@ -150,4 +154,7 @@ void AZEnemy::Init()
 
 	if (ZController)
 		ZController->Possess(this);
+		
+	if (MoveComp)
+		MoveComp->SetComponentTickEnabled(true);
 }

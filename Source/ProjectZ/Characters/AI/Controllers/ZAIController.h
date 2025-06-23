@@ -53,6 +53,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	bool IsAIMovementCompleted();
 	void PauseMovement(bool InValue);
+	float GetEnemyHalfHeight();
 
 	__inline AActor* GetTargetActor() { return TargetActor; }
 	__inline bool IsTargetDetected() { return bIsTargetDetected; }

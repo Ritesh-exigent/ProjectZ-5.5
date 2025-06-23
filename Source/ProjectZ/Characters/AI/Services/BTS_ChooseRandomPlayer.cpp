@@ -15,6 +15,7 @@ UBTS_ChooseRandomPlayer::UBTS_ChooseRandomPlayer()
 
 void UBTS_ChooseRandomPlayer::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {	
+	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 	CurrentTime += DeltaSeconds;
 	if (CurrentTime >= RecheckCooldown)
 	{

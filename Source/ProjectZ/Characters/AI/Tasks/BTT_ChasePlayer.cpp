@@ -13,6 +13,7 @@ UBTT_ChasePlayer::UBTT_ChasePlayer()
 {
 	NodeName = "ChasePlayer";
 	bNotifyTick = true;
+	HalfHeight = 0.f;
 }
 
 EBTNodeResult::Type UBTT_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -23,6 +24,7 @@ EBTNodeResult::Type UBTT_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerC
 		UE_LOG(LogTemp, Warning, TEXT("Controller is nullptr"));
 		return EBTNodeResult::Failed;
 	}
+	HalfHeight = ZController->GetPawn()->GetDefaultHalfHeight();
 	/*if (bForceChase)
 	{
 		int32 NumPlayers = GetWorld()->GetNumPlayerControllers();
@@ -31,7 +33,7 @@ EBTNodeResult::Type UBTT_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	}
 	else*/
 	TargetActor = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(GetSelectedBlackboardKey()));
-
+	//UE_LOG(LogTemp, Warning, TEXT("Execute Tick Test"));
 	//PlayerPawn = Cast<ASPlayer>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 	if(!TargetActor)//!PlayerPawn)
 	{
@@ -40,16 +42,24 @@ EBTNodeResult::Type UBTT_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	}
 
 	PreviousLocation = TargetActor->GetActorLocation();//PlayerPawn->GetActorLocation();
+		//UE_LOG(LogTemp, Warning, TEXT("PreviousLocation :%s"), *PreviousLocation.ToString());
+
 
 	if (FVector::Dist(TargetActor->GetActorLocation()/*PlayerPawn->GetActorLocation() */ , ZController->GetPawn()->GetActorLocation()) <= AcceptRadius)
 		return EBTNodeResult::Succeeded;
 
 	if (CalcPath())
 	{
-		ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
+		//UE_LOG(LogTemp, Warning, TEXT("Task InProgress"));
+		//Count = 0;
+		//ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
 		return EBTNodeResult::InProgress;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("NavSys is null"));
+	//else
+	//UE_LOG(LogTemp, Warning, TEXT("Failed to find path"));
+
+	//UE_LOG(LogTemp, Warning, TEXT("Task Failed"));
+	//UE_LOG(LogTemp, Warning, TEXT("NavSys is null"));
 	return EBTNodeResult::Failed;
 }
 
@@ -66,34 +76,55 @@ EBTNodeResult::Type UBTT_ChasePlayer::AbortTask(UBehaviorTreeComponent& OwnerCom
 
 void UBTT_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaTime)
 {
+	Super::TickTask(OwnerComp, NodeMemory, DeltaTime);
+	//Count++;
+	//UE_LOG(LogTemp, Warning, TEXT("Chase Tick Working! Count: %d"), Count);
 	if (!TargetActor)//!PlayerPawn)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("TargetActor is nullptr"));
 		FinishLatentTask(OwnerComp, EBTNodeResult::Aborted);
+		return;
 	}
 
-	if (FVector::Dist(TargetActor->GetActorLocation()/*PlayerPawn->GetActorLocation()*/, ZController->GetPawn()->GetActorLocation()) > AcceptRadius && PreviousLocation != TargetActor->GetActorLocation())
-	{
-		if (!CalcPath())
-			FinishLatentTask(OwnerComp, EBTNodeResult::Aborted);
-		else
-			ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
-	}
-	else
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+	//if (FVector::Dist(TargetActor->GetActorLocation()/*PlayerPawn->GetActorLocation()*/, ZController->GetPawn()->GetActorLocation()) > AcceptRadius && PreviousLocation != TargetActor->GetActorLocation())
+	//{
+	//	if (!CalcPath())
+	//		FinishLatentTask(OwnerComp, EBTNodeResult::Aborted);
+	//	else
+	//		ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
+	//}
+	
 	if (ZController->IsAIMovementCompleted())
 	{
 		CurrentPathIndex++;
-		CurrentPathPoint = PathPoints[CurrentPathIndex];
-		CurrentPathPoint.Z += 96.f;
-		ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
-		//FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		if (CurrentPathIndex >= PathPoints.Num())
+		{
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		}
+		else
+		{
+			CurrentPathPoint = PathPoints[CurrentPathIndex];
+			CurrentPathPoint.Z += HalfHeight;
+			//UE_LOG(LogTemp, Warning, TEXT("CurrentPathPoint: %s"), *CurrentPathPoint.ToString());
+			DrawDebugSphere(GetWorld(), CurrentPathPoint, 50.f, 3, FColor::Green, false, 5.f);
+			ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
+		}
 	}
+	
+	if (PreviousLocation != TargetActor->GetActorLocation())
+	{
+		PreviousLocation = TargetActor->GetActorLocation();
+		//UE_LOG(LogTemp, Warning, TEXT("Previous not equal"));
+		if (!CalcPath())
+			FinishLatentAbort(OwnerComp);
+	}
+
+	//FinishLatentTask(OwnerComp, EBTNodeResult::InProgress);
 }
 
 bool UBTT_ChasePlayer::CalcPath()
 {
-	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetNavigationSystem(GetWorld());
+	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld()); //GetNavigationSystem(GetWorld());
 	if (NavSystem)
 	{
 		UNavigationPath* Path = NavSystem->FindPathToLocationSynchronously(GetWorld(), ZController->GetPawn()->GetActorLocation(), PreviousLocation);
@@ -102,9 +133,9 @@ bool UBTT_ChasePlayer::CalcPath()
 			PathPoints = Path->PathPoints;
 			CurrentPathIndex = 1;
 			CurrentPathPoint = PathPoints[CurrentPathIndex];
-			CurrentPathPoint.Z += 96.f;
+			CurrentPathPoint.Z += HalfHeight;
 			//UE_LOG(LogTemp, Warning, TEXT("FoundPath!"));
-			//ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
+			ZController->RequestAIMovement(CurrentPathPoint, EMoveState::Walk, AcceptRadius);
 			return true;
 		}
 	}

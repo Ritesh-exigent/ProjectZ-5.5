@@ -27,7 +27,9 @@ public:
 
 	TArray<AActor*> FoundLights;
 
+	UFUNCTION(BlueprintCallable)
 	void LightsToggleAll();
+
 	void ToggleLight();
 
 	UFUNCTION(BlueprintCallable)
