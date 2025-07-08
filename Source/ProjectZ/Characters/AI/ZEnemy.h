@@ -11,6 +11,7 @@ class UBehaviorTree;
 class AZAIController;
 class AZEnemyManager;
 class UZAnimInstance;
+class UNiagaraSystem;
 class UPerceptionComponent;
 
 UCLASS()
@@ -35,6 +36,8 @@ protected:
 	TArray<UAnimMontage*> AttackMontages;
 	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
 	TSubclassOf<AZAIController> ControllerClass;
+	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
+	UNiagaraSystem* DeathVFX;
 
 public:
 		
@@ -52,7 +55,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void StartDestroy();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void OnDeath();
 
 	//..........................
@@ -80,4 +83,8 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void NetMulticast_PlayAttackMontage(bool bOverride);
 	void NetMulticast_PlayAttackMontage_Implementation(bool bOverride);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void NetMulticast_PlayDeathVFX();
+	void NetMulticast_PlayDeathVFX_Implementation();
 };

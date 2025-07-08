@@ -4,6 +4,8 @@
 #include "ZEnemy.h"
 #include "ZAnimInstance.h"
 #include "../MoveComponent.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
 #include "ProjectZ/Weapons/Ammunition.h"
 #include "ProjectZ/Characters/AI/Manager/ZEnemyManager.h"
 #include "ProjectZ/Characters/AI/Perception/PerceptionComponent.h"
@@ -17,15 +19,17 @@ AZEnemy::AZEnemy()
 	SetReplicateMovement(true);
 	PerceptionComp = CREATE(UPerceptionComponent, "PerceptionComponent");
 	Tags.Add(FName("Enemy"));
+	ZController = nullptr;
 }
 
 // Called when the game starts or when spawned
 void AZEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+	if(!ZController)
 	ZController = GetWorld()->SpawnActor<AZAIController>(ControllerClass);//Cast<AZAIController>(GetController());
-	if (ZController)
-		ZController->Possess(this);
+	/*if (ZController)
+		ZController->Possess(this);*/
 
 	AnimInst = Cast<UZAnimInstance>(SKMesh->GetAnimInstance());
 	if (AnimInst)
@@ -60,6 +64,10 @@ void AZEnemy::InitDestroy()
 		DropAmmunitions();
 		Manager->OnDeath(this);
 		//StartDestroy();
+		if(GetLocalRole() == ROLE_Authority && DeathVFX)
+		{
+			NetMulticast_PlayDeathVFX();
+		}
 		FTimerHandle DestroyTimeHandle;
 		GetWorld()->GetTimerManager().SetTimer(DestroyTimeHandle, [this]() {
 			SetActorLocation(FVector(0.f, 0.f, -1000.f));
@@ -95,6 +103,11 @@ void AZEnemy::OnMontageEnded(UAnimMontage* InMontage, bool bInterrupted)
 void AZEnemy::NetMulticast_PlayAttackMontage_Implementation(bool bOverride)
 {
 	PlayAttackMontage(bOverride);
+}
+
+void AZEnemy::NetMulticast_PlayDeathVFX_Implementation()
+{
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DeathVFX, GetActorLocation(), FRotator::ZeroRotator, FVector(2.f), true, true);
 }
 
 void AZEnemy::DropAmmunitions()

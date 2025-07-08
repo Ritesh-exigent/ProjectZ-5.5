@@ -42,6 +42,7 @@ void AZGameState::Tick(float DeltaTime)
 void AZGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	//DOREPLIFETIME(AZGameState, bIsItemActivated);
 	DOREPLIFETIME(AZGameState, CurrentCount);
 	DOREPLIFETIME(AZGameState, EnemyWaveInfo);
 	DOREPLIFETIME(AZGameState, C_QuestInfo);

@@ -6,10 +6,11 @@
 #include "GameFramework/Actor.h"
 #include "QuestUtils.h"
 #include "../Interfaces/InteractionInterface.h"
+
 #include "QuestItem.generated.h"
 
 class AZGameState;
-
+class UWidgetComponent;
 
 UCLASS()
 class PROJECTZ_API AQuestItem : public AActor, public IInteractionInterface
@@ -21,26 +22,40 @@ public:
 	AQuestItem();
 
 protected:
-	// Called when the game starts or when spawned
+
 	virtual void BeginPlay() override;
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnInteract();
 
 	UPROPERTY(EditAnywhere, Category="Values")
 	FName QuestID;
 	UPROPERTY(EditAnywhere, Category="Values")
 	int32 SubQuestID;
+	UPROPERTY(EditAnywhere, Category="Values")
+	bool bCanSpawnEnemies;
 	UPROPERTY(EditDefaultsOnly, Category="Values")
 	TEnumAsByte<EQuestItemType> ItemType;
+	UPROPERTY(Replicated, EditDefaultsOnly, Category="Values")
+	UStaticMeshComponent* Mesh;
+	UPROPERTY(EditDefaultsOnly, Category="Values")
+	UWidgetComponent* MarkerWidgetComponent;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_IsInteracted)
+	bool bIsInteracted;
+	UPROPERTY(ReplicatedUsing = OnRep_IsQuestActive)
 	bool bIsActive;
 	AZGameState* ZGameState;
+	
+	UFUNCTION()
+	void OnRep_IsInteracted();
+	UFUNCTION()
+	void OnRep_IsQuestActive();
 
-	UFUNCTION(Server, Reliable)
-	void Server_SetItemActive(bool bValue);
-	void Server_SetItemActive_Implementation(bool bValue);
+	UFUNCTION(Client, Reliable)
+	void Client_OnInteract();
+	void Client_OnInteract_Implementation();
 
 public:
 

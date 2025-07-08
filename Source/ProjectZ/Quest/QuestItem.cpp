@@ -2,16 +2,29 @@
 
 
 #include "QuestItem.h"
-#include "../GameStates/ZGameState.h"
 #include "Net/UnrealNetwork.h"
+#include "../GameStates/ZGameState.h"
+#include "Components/WidgetComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "../GameModes/ZGameMode.h"
 
 
 // Sets default values
 AQuestItem::AQuestItem()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+	bIsInteracted = false;
 	bIsActive = false;
+
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComponent"));
+	Mesh->SetIsReplicated(true);
+	SetRootComponent(Mesh);
+
+	MarkerWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
+	MarkerWidgetComponent->SetIsReplicated(true);
+	MarkerWidgetComponent->SetupAttachment(Mesh);
 }
 
 // Called when the game starts or when spawned
@@ -21,32 +34,49 @@ void AQuestItem::BeginPlay()
 	ZGameState = GetWorld()->GetGameState<AZGameState>();
 }
 
-// Called every frame
-void AQuestItem::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
 void AQuestItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AQuestItem, bIsActive);
+	DOREPLIFETIME(AQuestItem, bIsInteracted);
 }
 
-void AQuestItem::Server_SetItemActive_Implementation(bool bValue)
+void AQuestItem::OnRep_IsInteracted()
 {
-	bIsActive = bValue;
+	OnInteract();
+}
+
+void AQuestItem::OnRep_IsQuestActive()
+{
+	Mesh->SetRenderCustomDepth(bIsActive);
+	if (bIsActive)
+		MarkerWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
+	else
+		MarkerWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+}
+
+void AQuestItem::Client_OnInteract_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Client door triggered!"));
+	OnInteract();
 }
 
 void AQuestItem::Activate()
 {
-	bIsActive = true;
+	if (HasAuthority())
+	{
+		bIsActive = true;
+		OnRep_IsQuestActive();
+	}
 }
 
 void AQuestItem::Deactivate()
 {
-	bIsActive = false;
+	if (HasAuthority())
+	{
+		bIsActive = false;
+		OnRep_IsQuestActive();
+	}
 }
 
 void AQuestItem::Interact(ASPlayer* InPlayer)
@@ -56,6 +86,17 @@ void AQuestItem::Interact(ASPlayer* InPlayer)
 		UE_LOG(LogTemp, Warning, TEXT("Quest Interact triggered"));
 		ZGameState->UpdateQuest(SubQuestID, ItemType);
 		Deactivate();
+
+		if (bCanSpawnEnemies)
+		{
+			AZGameMode* GM = Cast<AZGameMode>(GetWorld()->GetAuthGameMode());
+			if (GM)
+			GM->InitEnemies();
+		}
+
+		bIsInteracted = true;
+		OnRep_IsInteracted();
+
 		if (ItemType == EQuestItemType::Pickup)
 			Destroy();
 	}

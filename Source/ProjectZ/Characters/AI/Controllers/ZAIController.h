@@ -61,7 +61,9 @@ public:
 	void Attack(bool bOverride = false);
 	void StopBehaviorTree();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 	void OnTargetFound(AActor* InTargetActor);
+	UFUNCTION()
+	void OnAIMoveCompleted();
 
 };

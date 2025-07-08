@@ -26,7 +26,9 @@ public:
 
 
 	void BeginSpawn(int32 InNum);
+	void AddSpawnCount(int32 InNum);
 	__inline void SetManager(AZEnemyManager* InManager) { Manager = InManager; }
+	__inline bool IsSpawning() { return bIsSpawning; }
 
 protected:
 
@@ -48,6 +50,7 @@ private:
 	int SpawnedCount;
 	int SpawnBatchSize;
 
+	bool bIsSpawning;
 	AZEnemyManager* Manager;
 
 	UPROPERTY()

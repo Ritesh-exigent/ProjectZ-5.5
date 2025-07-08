@@ -6,9 +6,8 @@
 #include "BehaviorTree/Services/BTService_BlackboardBase.h"
 #include "BTS_ChooseRandomPlayer.generated.h"
 
-/**
- * 
- */
+class AZGameMode;
+
 UCLASS()
 class PROJECTZ_API UBTS_ChooseRandomPlayer : public UBTService_BlackboardBase
 {
@@ -27,9 +26,10 @@ protected:
 	float CurrentTime;
 
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
-	
+	virtual FString GetStaticDescription() const override;
 private:
 
+	AZGameMode* ZGameMode;
 	
 	void SelectRandomPlayer(UBehaviorTreeComponent& OwnerComp);
 };

@@ -68,7 +68,9 @@ void ASPlayer::BeginPlay()
 		if (UEnhancedInputLocalPlayerSubsystem* LPSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
 		{
 			if(IMC)
-			LPSubsystem->AddMappingContext(IMC, 0);
+			{
+				LPSubsystem->AddMappingContext(IMC, 0);
+			}
 		}
 	}
 }
@@ -124,6 +126,33 @@ void ASPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME(ASPlayer, LookY);
 }
 
+void ASPlayer::Restart()
+{
+	Super::Restart();
+	if (IsLocallyControlled())
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (PC)
+		{
+			if (ULocalPlayer* LP = PC->GetLocalPlayer())
+			{
+				if (UEnhancedInputLocalPlayerSubsystem* LPSubsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+				{
+					LPSubsystem->ClearAllMappings();
+					if (IMC)
+					{
+						LPSubsystem->AddMappingContext(IMC, 0);
+						//UE_LOG(LogTemp, Warning, TEXT("Crane MappingContext init by server"));
+					}
+					//UE_LOG(LogTemp, Warning, TEXT("Crane EICSubystem init by server"));
+				}
+				//UE_LOG(LogTemp, Warning, TEXT("Crane LP init by server"));
+			}
+			//UE_LOG(LogTemp, Warning, TEXT("Crane PC init by server"));
+		}
+	}
+}
+
 void ASPlayer::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 
@@ -155,6 +184,7 @@ void ASPlayer::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 
 void ASPlayer::PerformMove(const FInputActionValue& Value)
 {	
+	//UE_LOG(LogTemp, Warning, TEXT("Player Move"));
 	FVector2D Direction = Value.Get<FVector2D>();
 	if (Direction.Size() > 0.01f && MoveComp)
 	{

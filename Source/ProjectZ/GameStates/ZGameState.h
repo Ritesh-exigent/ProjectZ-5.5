@@ -84,6 +84,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category="Values | Quest", meta=(AllowPrivateAccess = true))
 	UDataTable* QuestTable;
 
+	//UPROPERTY(ReplicatedUsing = OnRep_OnItemsActivated)
+	bool bIsItemActivated;
 	UPROPERTY(ReplicatedUsing = OnRep_OnCurrentCountUpdated)
 	int32 CurrentCount;
 	int32 TotalCount;
@@ -111,6 +113,7 @@ private:
 	UFUNCTION(Server, Reliable)
 	void Server_StartGameQuest();
 	void Server_StartGameQuest_Implementation();
+
 	UFUNCTION()
 	void OnRep_OnCurrentCountUpdated();
 	UFUNCTION()

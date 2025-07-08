@@ -33,7 +33,7 @@ void UZAnimInstance::PlayMontage(UAnimMontage* InMontage, bool bOverride)
 	}
 	else if (!IsAnyMontagePlaying())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Montage Playing"));
+		//UE_LOG(LogTemp, Warning, TEXT("Montage Playing"));
 		Montage_Play(InMontage);
 	}
 }

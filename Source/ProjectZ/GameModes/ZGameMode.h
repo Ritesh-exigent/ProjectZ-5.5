@@ -51,4 +51,5 @@ public:
 	ASPlayer* GetPlayerPawnAt(int32 Index);
 	ASPlayer* GetRandomAlivePlayer();
 
+	void InitEnemies();
 };

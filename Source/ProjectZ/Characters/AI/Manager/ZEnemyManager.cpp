@@ -9,10 +9,13 @@
 #include "./ProjectZ/GameStates/ZGameState.h"
 #include "../Spawn/ZSpawn.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogZEManager, Warning, All);
+DEFINE_LOG_CATEGORY(LogZEManager);
+
 // Sets default values
 AZEnemyManager::AZEnemyManager()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	ZSpawnComp = CreateDefaultSubobject<UZSpawnManager>("ZSpawnComponent");
 
@@ -27,9 +30,6 @@ AZEnemyManager::AZEnemyManager()
 	WaveNumEnemies = MaxSpawnedEnemies;
 	DeathCount = 0;
 	EnemyCount = 0;
-
-	bCanSpawnEnemies = false;
-	CurrentTimer = 0.f;
 }
 
 void AZEnemyManager::BeginPlay()
@@ -38,7 +38,7 @@ void AZEnemyManager::BeginPlay()
 
 	TArray<AActor*> FoundSpawners;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), SpawnClass, FoundSpawners);
-	UE_LOG(LogTemp, Warning, TEXT("SPawners Num: %d"), FoundSpawners.Num());
+	UE_LOG(LogTemp, Warning, TEXT("Spawners Num: %d"), FoundSpawners.Num());
 	for (AActor* Actor : FoundSpawners)
 	{
 		AZSpawn* Spawn = Cast<AZSpawn>(Actor);
@@ -53,81 +53,8 @@ void AZEnemyManager::BeginPlay()
 		SpawnOtherOnRemaining = MaxSpawnedEnemies;
 
 	ZGameState = GetWorld()->GetAuthGameMode()->GetGameState<AZGameState>();
-
-	//................
+	PrepareNextWave();
 	InitPools();
-}
-
-void AZEnemyManager::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	if (bCanSpawnEnemies)
-	{
-		CurrentTimer += DeltaTime;
-		if (CurrentTimer >= WaveCooldownTimer)
-		{	
-			//AsyncSpawnEnemies();
-			//SpawnEnemies();
-			CurrentTimer = 0;
-			bCanSpawnEnemies = false;
-		}
-	}
-}
-
-void AZEnemyManager::AsyncSpawnEnemies()
-{
-	AsyncTask(ENamedThreads::AnyHiPriThreadHiPriTask, [this]() {SpawnEnemies(); });
-}
-
-void AZEnemyManager::SpawnEnemies()
-{
-	if(WaveNumEnemies <= 0) return;
-
-	int32 EnemiesToSpawn = WaveNumEnemies - MaxSpawnedEnemies;
-	EnemiesToSpawn = (EnemiesToSpawn < 0) ? WaveNumEnemies : MaxSpawnedEnemies;
-	WaveNumEnemies -= EnemiesToSpawn;
-	if (WaveNumEnemies < 0)
-		WaveNumEnemies = 0;
-		
-
-	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
-	if(NavSys)
-	{
-		
-		//for (int32 i = 0; i < EnemiesToSpawn; ++i)
-		//{	
-			AsyncTask(ENamedThreads::GameThread, [NavSys, EnemiesToSpawn, this]() {
-				
-				ZSpawnComp->CurateZombieSpawn(EnemiesToSpawn, ESpawnType::Spread);
-				/*int32 i = 0;
-				int32 NumPlayer = GetWorld()->GetAuthGameMode()->GetNumPlayers();
-				APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), FMath::RandRange(0, NumPlayer - 1));
-				while (i < EnemiesToSpawn)
-				{
-					FNavLocation RandomLocation;
-					if (NavSys->GetRandomReachablePointInRadius(PlayerPawn->GetActorLocation(), SpawnRadius, RandomLocation))
-					{
-						FActorSpawnParameters ASP;
-						ASP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-						AZAIController* ZController = GetWorld()->SpawnActor<AZAIController>(ZAIController.Get(), FVector::ZeroVector, FRotator::ZeroRotator, ASP);
-						if (ZController)
-						{
-							RandomLocation.Location.Z += 96.f;
-							AZEnemy* ZEnemy = GetWorld()->SpawnActor<AZEnemy>(NormalEnemies[0].Get(), RandomLocation.Location, FRotator::ZeroRotator, ASP);
-							if(ZEnemy)
-							{
-								ZEnemy->Manager = this;
-								ZController->Possess(ZEnemy);
-								++EnemyCount;
-								++i;
-							}
-						}
-					}
-
-				}*/
-			});
-		//}
-	}
 }
 
 void AZEnemyManager::PrepareNextWave()
@@ -135,23 +62,10 @@ void AZEnemyManager::PrepareNextWave()
 	WaveNumEnemies = EnemySpawnMultiplier * MaxSpawnedEnemies * Wave;
 	WaveNumEnemies = FMath::Min(WaveNumEnemies, MaxEnemies);
 
-	FTimerHandle CooldownTimer;
+	/*FTimerHandle CooldownTimer;
 	GetWorld()->GetTimerManager().SetTimer(CooldownTimer, [this]() {
-		if (Spawns.Num() <= 0)
-			return;
-
-		int32 HalfNum = WaveNumEnemies / Spawns.Num();
-		int32 TotalNum = WaveNumEnemies;
-		if (HalfNum <= 0)
-			HalfNum = TotalNum;
-		UE_LOG(LogTemp, Warning, TEXT("HalfNum: %d"), HalfNum);
-		for (AZSpawn* Spawn : Spawns)
-		{
-			Spawn->BeginSpawn(HalfNum);
-			if((TotalNum - HalfNum) >= 0)
-			TotalNum -= HalfNum;
-		}
-	}, 0.1f, false, WaveCooldownTimer);
+		DispatchSpawn();
+	}, 0.1f, false, WaveCooldownTimer);*/
 	UE_LOG(LogTemp, Warning, TEXT("WaveNum: %d, EnemyNum: %d"), Wave, WaveNumEnemies);
 }
 
@@ -165,27 +79,46 @@ void AZEnemyManager::FinishWave()
 	}
 
 	EnemyCount = 0;
-	CurrentTimer = 0.f;
-	bCanSpawnEnemies = true;
 	PrepareNextWave();
 }
 
 void AZEnemyManager::DispatchSpawn()
 {
-	if (Spawners.Num() <= 0)
-		return;
-
-	int32 ZombiesPerSpawn = MaxEnemies / Spawners.Num();
-	for (TSoftObjectPtr<AZSpawn> SpawnPoint : Spawners)
+	if (Spawns.Num() <= 0)
 	{
-		if (SpawnPoint)
-		{
-			SpawnPoint->SetManager(this);
-			SpawnPoint->BeginSpawn(ZombiesPerSpawn);
-		}
-		else
-			GLog->Log("SpawnPoint is null");
+		UE_LOG(LogTemp, Warning, TEXT("no spawners found to spawn enemies!"));
+		return;
 	}
+
+	int32 TotalNum = MaxSpawnedEnemies;
+	if (WaveNumEnemies < MaxSpawnedEnemies)
+	{
+		TotalNum = WaveNumEnemies;
+		WaveNumEnemies = 0;
+	}
+	else
+		WaveNumEnemies -= TotalNum;
+
+	int32 HalfNum = TotalNum / Spawns.Num();
+	if (HalfNum <= 0)
+		HalfNum = TotalNum;
+	UE_LOG(LogTemp, Warning, TEXT("TotalNum: %d, HalfNum: %d"), TotalNum, HalfNum);
+	for (int32 i=0; i<Spawns.Num(); ++i)
+	{
+		if (TotalNum - HalfNum < 0)
+			HalfNum = TotalNum;
+
+		int32 RandomSpawnIndex = FMath::RandRange(0, Spawns.Num() - 1);
+		if (Spawns[RandomSpawnIndex]->IsSpawning())
+			Spawns[RandomSpawnIndex]->AddSpawnCount(HalfNum);
+		else
+			Spawns[RandomSpawnIndex]->BeginSpawn(HalfNum);
+
+		TotalNum -= HalfNum;
+		if (TotalNum <= 0)
+			break;
+	}
+	
 }
 
 void AZEnemyManager::InitPools()
@@ -242,7 +175,6 @@ AZEnemy* AZEnemyManager::SpawnFromPool(int32 ID, FVector Location, FRotator Rota
 			SpawnedEnemy->SetActorRotation(Rotation);
 			SpawnedEnemy->SetManager(this);
 			EnemyCount++;
-			//activate enemy
 			return SpawnedEnemy;
 		}
 	}
@@ -261,27 +193,13 @@ void AZEnemyManager::OnDeath(AActor* Initiator)
 {
 	--EnemyCount;
 	UE_LOG(LogTemp, Warning, TEXT("EnemyCount: %d"), EnemyCount);
-	//if (EnemyCount <= SpawnOtherOnRemaining && WaveNumEnemies > 0 )
-	//{
-	//	SpawnEnemies();
-	//	//AsyncTask(ENamedThreads::GameThread, [this]() {SpawnEnemies(); });
-	//}
+	if (EnemyCount <= SpawnOtherOnRemaining && WaveNumEnemies > 0 )
+	{
+		DispatchSpawn();
+	}
 	if (EnemyCount <= 0)
 	{
 		EnemyCount = 0;
 		FinishWave();
 	}
 }
-
-void AZEnemyManager::InitEnemies()
-{
-	//bCanSpawnEnemies = true;
-	PrepareNextWave();
-}
-
-void AZEnemyManager::SetSpawners(TArray<AZSpawn*> InSpawners)
-{
-	Spawners.Empty();
-	//Spawners = InSpawners;
-}
-

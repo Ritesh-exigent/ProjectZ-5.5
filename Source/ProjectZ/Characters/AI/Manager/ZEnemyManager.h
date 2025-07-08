@@ -44,7 +44,6 @@ public:
 protected:
 
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Settings | Values")
 	UZSpawnManager* ZSpawnComp;
@@ -69,6 +68,8 @@ protected:
 	float SpawnRadius;
 	UPROPERTY(EditAnywhere, Category = "Settings | Values", meta = (ClampMin = "0", ClampMax = "2"))
 	float EnemySpawnMultiplier;
+
+	//may be not used
 	UPROPERTY(EditAnywhere, Category="Settings | Values")
 	int32 WaveCooldownTimer;
 
@@ -83,13 +84,9 @@ protected:
 	TArray<TSoftObjectPtr<AZSpawn>> Spawners;
 	AZGameState* ZGameState;
 
-	void AsyncSpawnEnemies();
-	void SpawnEnemies();
 	void PrepareNextWave();
 	void FinishWave();
 	//......................................................
-	void DispatchSpawn();
-
 	void InitPools();
 
 	friend class AZEnemy;
@@ -101,10 +98,7 @@ public:
 	void OnDeath(AActor* Initiator);
 
 	UFUNCTION(BlueprintCallable)
-	void InitEnemies();
-
-	UFUNCTION(BlueprintCallable)
-	void SetSpawners(TArray<AZSpawn*> InSpawners);
+	void DispatchSpawn();
 	
 	//........................................
 	UFUNCTION(BlueprintCallable)

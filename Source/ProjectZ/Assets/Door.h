@@ -25,10 +25,7 @@ public:
 protected:
 
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-private:
 
 	UPROPERTY(EditDefaultsOnly, Category="Settings | Components")
 	UBoxComponent* Collider;

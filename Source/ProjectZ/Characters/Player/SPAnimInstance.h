@@ -32,7 +32,9 @@ public:
 	int32 CurrentWeaponType;
 	UPROPERTY(BlueprintReadOnly)
 	float LookX;
-	
+	UPROPERTY(BlueprintReadOnly)
+	bool bSprint;
+
 	void UpdateAnimMontage(UAnimMontage* InMontage);
 
 private:

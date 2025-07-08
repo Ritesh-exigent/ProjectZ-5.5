@@ -7,6 +7,8 @@
 #include "MoveUtils.h"
 #include "MoveComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAIMoveComplete);
+
 USTRUCT()
 struct FMoveData {
 
@@ -130,4 +132,6 @@ public:
 	__inline void SetMoveState(EMoveState InState) { MoveState = InState; }
 	__inline float GetSpeed() { return Speed; }
 	__inline float GetServerSpeed() { return SpeedOnServer; }
+
+	FOnAIMoveComplete OnAIMoveComplete;
 };

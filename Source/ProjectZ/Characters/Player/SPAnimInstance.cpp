@@ -60,5 +60,6 @@ void USPAnimInstance::UpdateAnimState()
 	Direction = PlayerOwner->GetMoveComponent()->GetMoveDirection();
 	CurrentWeaponType = PlayerOwner->GetWeaponComponent()->GetCurrentWeaponType();
 	LookX = PlayerOwner->GetLookYValue();
+	bSprint = PlayerOwner->IsSprinting();
 	//UE_LOG(LogTemp, Warning, TEXT("Player: %s, LookX: %f"), *GetOwningActor()->GetName(), LookX);
 }

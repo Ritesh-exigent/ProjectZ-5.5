@@ -32,6 +32,7 @@ void AZAIController::OnPossess(APawn* InPawn)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s is possessed by %s"), *Z_Pawn->GetName(), *GetName());
 		Z_Pawn->GetPerceptionComponent()->OnTargetFound.AddDynamic(this, &AZAIController::OnTargetFound);
+		Z_Pawn->GetMoveComponent()->OnAIMoveComplete.AddDynamic(this, &AZAIController::OnAIMoveCompleted);
 		UBlackboardComponent* ZBB = nullptr;
 		if (BTree && UseBlackboard(BTree->BlackboardAsset, ZBB))
 		{
@@ -76,7 +77,7 @@ void AZAIController::AbortAIMovement()
 
 bool AZAIController::IsAIMovementCompleted()
 {
-	if (Z_Pawn)
+	if (Z_Pawn && Z_Pawn->GetMoveComponent())
 		return Z_Pawn->GetMoveComponent()->IsAIMovementCompleted();
 	return false;
 }
@@ -106,7 +107,7 @@ void AZAIController::StopBehaviorTree()
 	if (BTComp)
 	{
 		BTComp->StopTree();
-		UE_LOG(LogTemp, Warning, TEXT("BT Stopped"));
+		//UE_LOG(LogTemp, Warning, TEXT("BT Stopped"));
 	}
 }
 
@@ -114,4 +115,9 @@ void AZAIController::OnTargetFound(AActor* InTargetActor)
 {
 	bIsTargetDetected = true;
 	TargetActor = InTargetActor;
+}
+
+void AZAIController::OnAIMoveCompleted()
+{
+
 }

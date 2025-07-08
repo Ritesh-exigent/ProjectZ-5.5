@@ -150,6 +150,7 @@ void UMoveComponent::ApplyMovement(float DeltaTime)
 	{
 		FHitResult ProjectionHit;
 		FVector ProjectionDirection = FVector::VectorPlaneProject(CurrentDirection, MoveHit.Normal);
+		//ProjectionDirection.Normalize();
 		NetMove = ProjectionDirection * Speed * DeltaTime;
 		GetOwner()->AddActorWorldOffset(NetMove, true, &ProjectionHit);
 	}
@@ -182,7 +183,7 @@ void UMoveComponent::HandleOverallMovement(float DeltaTime)
 	//if (!bIsOwnerAI)
 	{
 		FHitResult GravityHit;
-		GetOwner()->AddActorWorldOffset(FVector(0.f, 0.f, -980 * DeltaTime), true, &GravityHit);
+		GetOwner()->AddActorWorldOffset(FVector(0.f, 0.f, -580 * DeltaTime), true, &GravityHit);
 	}
 
 }
@@ -244,6 +245,8 @@ void UMoveComponent::CheckAIMoveResult()
 		MoveResult = EMoveResult::Completed;
 		SpeedOnServer = 0.f;
 		Speed = 0.f;
+		if (OnAIMoveComplete.IsBound())
+			OnAIMoveComplete.Broadcast();
 	}
 	//UE_LOG(LogTemp, Warning, TEXT("Distance: %f"), Distance);
 }

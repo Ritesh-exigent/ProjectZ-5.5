@@ -181,39 +181,52 @@ void AZSpawn::AllSpawn(int num)
 
 void AZSpawn::BeginSpawn(int32 InNum)
 {
+	/*if (GetLocalRole() == ROLE_Authority)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Server Spawner"));
+	}
+	else 
+		UE_LOG(LogTemp, Warning, TEXT("-Local Spawner"));*/
 	bCanSpawn = true;
+	bIsSpawning = true;
 	TotalZombies = InNum;
 }
 
-
-
+void AZSpawn::AddSpawnCount(int32 InNum)
+{
+	TotalZombies += InNum;
+}
 
 void AZSpawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	if (bCanSpawn)
+	if (GetLocalRole() == ROLE_Authority)
 	{
-		if (TotalZombies <= 0)
+		if (bCanSpawn)
 		{
-			bCanSpawn = false;
-			return;
-		}
-		CurrentSpawnTime += DeltaTime;
-		if (CurrentSpawnTime >= SpawnDelay)
-		{
-			UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
-			if (NavSys)
+			if (TotalZombies <= 0)
 			{
-				FNavLocation RandomLoc;
-				if (NavSys->GetRandomReachablePointInRadius(GetActorLocation(), MaxSpawningRadius, RandomLoc))
-				{
-					int32 ID = FMath::RandRange(PoolIDRange.X, PoolIDRange.Y);
-					Manager->SpawnFromPool(ID, RandomLoc.Location+ FVector(0.f, 0.f, 120.f));
-					TotalZombies--;
-				}
+				bCanSpawn = false;
+				bIsSpawning = false;
+				return;
 			}
-			CurrentSpawnTime = 0.f;
+			CurrentSpawnTime += DeltaTime;
+			if (CurrentSpawnTime >= SpawnDelay)
+			{
+				UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+				if (NavSys)
+				{
+					FNavLocation RandomLoc;
+					if (NavSys->GetRandomReachablePointInRadius(GetActorLocation(), MaxSpawningRadius, RandomLoc))
+					{
+						int32 ID = FMath::RandRange(PoolIDRange.X, PoolIDRange.Y);
+						Manager->SpawnFromPool(ID, RandomLoc.Location+ FVector(0.f, 0.f, 120.f));
+						TotalZombies--;
+					}
+				}
+				CurrentSpawnTime = 0.f;
+			}
 		}
 	}
 }

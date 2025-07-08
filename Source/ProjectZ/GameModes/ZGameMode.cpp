@@ -55,11 +55,11 @@ void AZGameMode::PostLogin(APlayerController* NewPlayer)
 			NewPlayer->Possess(Player);
 			Players.Add(Player);
 			
-			if (!bInitZManager && EnemyManager && bSpawnEnemies)
+			/*if (!bInitZManager && EnemyManager && bSpawnEnemies)
 			{
 				EnemyManager->InitEnemies();
 				bInitZManager = true;
-			}
+			}*/
 		}
 	}
 
@@ -85,4 +85,10 @@ ASPlayer* AZGameMode::GetRandomAlivePlayer()
 		}
 	}
 	return nullptr;
+}
+
+void AZGameMode::InitEnemies()
+{
+	if(EnemyManager)
+	EnemyManager->DispatchSpawn();
 }

@@ -7,6 +7,7 @@
 #include "EnhancedInput/Public/InputAction.h"
 #include "./ProjectZ/Characters/BaseCharacter.h"
 #include "EnhancedInput/Public/InputActionValue.h"
+#include "ProjectZ/Interfaces/ZPawnInterface.h"
 #include "SPlayer.generated.h"
 
 class AWeapon;
@@ -18,7 +19,7 @@ class UInputMappingContext;
 #define MAX_WEAPON_SLOT 3
 
 UCLASS()
-class PROJECTZ_API ASPlayer : public ABaseCharacter
+class PROJECTZ_API ASPlayer : public ABaseCharacter, public IZPawnInterface
 {
 	GENERATED_BODY()
 
@@ -32,6 +33,7 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void Restart() override;
 
 	UFUNCTION()
 	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -98,7 +100,7 @@ private:
 	void Server_BeginReload();
 	void Server_BeginReload_Implementation();
 	
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(NetMulticast, Reliable)
 	void NetMulticast_PlayReloadMontage(UAnimMontage* InMontage);
 	void NetMulticast_PlayReloadMontage_Implementation(UAnimMontage* InMontage);
 
@@ -118,6 +120,7 @@ public:
 	__inline USPlayerHUD* GetPlayerHUD() { return PlayerHUD; }
 	__inline USPAnimInstance* GetAnimInstance() { return AnimInst; }
 	__inline float GetLookYValue() { return LookY; }
+	__inline bool IsSprinting() { return bSprint; }
 	
 	void SetCurrentAmmo(int32 InCurrentAmmo);
 	void SetTotalAmmo(int32 InTotalAmmo);
