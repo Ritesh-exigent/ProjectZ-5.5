@@ -76,6 +76,7 @@ void AZEnemyManager::FinishWave()
 	if (ZGameState)
 	{
 		ZGameState->UpdateEnemyWaveInfo(FEnemyWaveInfo(Wave, WaveCooldownTimer));
+		ZGameState->SetIsWaveCompleted(true);
 	}
 
 	EnemyCount = 0;
@@ -89,6 +90,8 @@ void AZEnemyManager::DispatchSpawn()
 		UE_LOG(LogTemp, Warning, TEXT("no spawners found to spawn enemies!"));
 		return;
 	}
+	if (ZGameState)
+		ZGameState->SetIsWaveCompleted(false);
 
 	int32 TotalNum = MaxSpawnedEnemies;
 	if (WaveNumEnemies < MaxSpawnedEnemies)

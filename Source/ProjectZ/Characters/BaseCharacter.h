@@ -30,7 +30,7 @@ protected:
 	USkeletalMeshComponent* SKMesh;
 	UPROPERTY(EditDefaultsOnly, Category="Settings | Defaults")
 	UMoveComponent* MoveComp;
-	UPROPERTY(EditDefaultsOnly, Category="Settings | Defaults")
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category="Settings | Defaults")
 	UHDComponent* HDComp;
 
 	virtual void BeginPlay() override;

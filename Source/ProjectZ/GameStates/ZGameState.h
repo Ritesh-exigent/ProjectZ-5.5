@@ -67,13 +67,18 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_EnemyWaveInfo)
 	FEnemyWaveInfo EnemyWaveInfo;
+	UPROPERTY(Replicated)
+	bool bWaveCompleted;
 
 public:
 
 	UFUNCTION()
 	void OnRep_EnemyWaveInfo();
 	void UpdateEnemyWaveInfo(const FEnemyWaveInfo& NewWaveInfo);
-	
+	inline void SetIsWaveCompleted(bool InValue) { bWaveCompleted = InValue; }
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	inline bool IsWaveCompleted() { return bWaveCompleted; }
+
 	FOnEnemyInfoUpdated OnEnemyWaveUpdated;
 
 

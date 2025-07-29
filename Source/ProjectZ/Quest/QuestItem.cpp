@@ -74,6 +74,7 @@ void AQuestItem::Deactivate()
 {
 	if (HasAuthority())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Quest Deactivated"));
 		bIsActive = false;
 		OnRep_IsQuestActive();
 	}
@@ -81,23 +82,26 @@ void AQuestItem::Deactivate()
 
 void AQuestItem::Interact(ASPlayer* InPlayer)
 {
-	if (bIsActive && ZGameState)
+	if (HasAuthority())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Quest Interact triggered"));
-		ZGameState->UpdateQuest(SubQuestID, ItemType);
-		Deactivate();
-
-		if (bCanSpawnEnemies)
+		if (bIsActive && ZGameState && ZGameState->IsWaveCompleted())
 		{
-			AZGameMode* GM = Cast<AZGameMode>(GetWorld()->GetAuthGameMode());
-			if (GM)
-			GM->InitEnemies();
+			UE_LOG(LogTemp, Warning, TEXT("Quest Interact triggered"));
+			ZGameState->UpdateQuest(SubQuestID, ItemType);
+			Deactivate();
+
+			if (bCanSpawnEnemies)
+			{
+				AZGameMode* GM = Cast<AZGameMode>(GetWorld()->GetAuthGameMode());
+				if (GM)
+				GM->InitEnemies();
+			}
+
+			bIsInteracted = true;
+			OnRep_IsInteracted();
+
+			if (ItemType == EQuestItemType::Pickup)
+				Destroy();
 		}
-
-		bIsInteracted = true;
-		OnRep_IsInteracted();
-
-		if (ItemType == EQuestItemType::Pickup)
-			Destroy();
 	}
 }

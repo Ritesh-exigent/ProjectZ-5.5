@@ -37,7 +37,7 @@ protected:
 	bool bCanSpawnEnemies;
 	UPROPERTY(EditDefaultsOnly, Category="Values")
 	TEnumAsByte<EQuestItemType> ItemType;
-	UPROPERTY(Replicated, EditDefaultsOnly, Category="Values")
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category="Values")
 	UStaticMeshComponent* Mesh;
 	UPROPERTY(EditDefaultsOnly, Category="Values")
 	UWidgetComponent* MarkerWidgetComponent;
@@ -60,7 +60,8 @@ protected:
 public:
 
 	__inline bool IsOfType(EQuestItemType InType) { return ItemType == InType; }
-
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	inline bool IsItemActive() { return bIsActive; }
 	void Activate();
 	void Deactivate();
 	void Interact(ASPlayer* InPlayer) override;

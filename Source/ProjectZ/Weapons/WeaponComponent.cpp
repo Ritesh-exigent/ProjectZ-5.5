@@ -85,18 +85,18 @@ bool UWeaponComponent::AddWeapon(AWeapon* NewWeapon)
 		NewWeapon->SetPlayerOwner(PlayerOwner);
 		FAttachmentTransformRules ATR = FAttachmentTransformRules::SnapToTargetNotIncludingScale;
 		ATR.bWeldSimulatedBodies = true;
-		UE_LOG(LogTemp, Warning, TEXT("%s: Weapon Added"), *PlayerOwner->GetName());
+		//UE_LOG(LogTemp, Warning, TEXT("%s: Weapon Added"), *PlayerOwner->GetName());
 		if(NewWeapon->AttachToComponent(PlayerOwner->GetMesh(), ATR, (Index == 0) ? WEAPON_SOCKET1 : WEAPON_SOCKET2))
 		{
 			NetMulticast_SetWeaponCollision(NewWeapon, ECollisionEnabled::NoCollision);
-			UE_LOG(LogTemp, Warning, TEXT("NetMulticast called"));
+			//UE_LOG(LogTemp, Warning, TEXT("NetMulticast called"));
 		}
 		return true;
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Weapon slots are full"));
-	}
+	}*/
 	return false;
 }
 
@@ -135,7 +135,10 @@ void UWeaponComponent::EquipWeapon(int32 Index)
 void UWeaponComponent::UseWeapon(bool bInValue)
 {
 	//role check must not be here inorder to work in single player mode
-	if (GetOwnerRole() != ROLE_AutonomousProxy || !HasEquippedAnyWeapon())
+	/*if (GetOwnerRole() != ROLE_AutonomousProxy || !HasEquippedAnyWeapon())
+		return;*/
+
+	if (!HasEquippedAnyWeapon())
 		return;
 
 	if (bInValue)
@@ -205,12 +208,12 @@ void UWeaponComponent::Server_AddWeapon_Implementation(int32 Index, AWeapon* Wea
 	{
 		NetMulticast_SetWeaponCollision(Weapon, ECollisionEnabled::NoCollision);
 	}
-	
-
 }
 
 void UWeaponComponent::NetMulticast_SetWeaponCollision_Implementation(AWeapon* Weapon, ECollisionEnabled::Type InType)
 {
+	if (!Weapon)
+		return;
 	Weapon->bGenerateOverlapEventsDuringLevelStreaming = false;
 	Weapon->SetCollision(InType);
 }

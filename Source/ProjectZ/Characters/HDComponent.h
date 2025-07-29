@@ -50,7 +50,9 @@ public:
 	void TakeDamage(float InAmount);
 	void AddHealth(float InAmount);
 
-	__inline float GetHealth() { return C_Health; }
-	__inline float GetMaxHealth() { return MaxHealth; }
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	inline float GetHealth() { return C_Health; }
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	inline float GetMaxHealth() { return MaxHealth; }
 	__inline bool IsDead() { return (C_Health <= 0) ? true : false; }
 };

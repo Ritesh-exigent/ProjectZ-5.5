@@ -63,7 +63,10 @@ void ACrane::Tick(float DeltaTime)
 			}
 
 		}
+
 	}
+	if (bOverload)
+		Overload(DeltaTime);
 }
 
 void ACrane::PossessedBy(AController* InController)
@@ -132,7 +135,7 @@ void ACrane::PerformMove(const FInputActionValue& InValue)
 {
 	float Value = InValue.Get<float>();
 
-	if (!bIsLifting)
+	if (!bIsLifting && !bOverload)
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("Crane Moving Value: %f"), Value);
 		AddActorWorldOffset(FVector(0.f, Speed * Value * GetWorld()->GetDeltaSeconds(), 0.f), true);
@@ -151,12 +154,12 @@ void ACrane::FinishMove(const FInputActionValue& InValue)
 void ACrane::StartMagnet(const FInputActionValue& InValue)
 {
 	bool Value = InValue.Get<bool>();
-	if(!Value && !bIsMoving)
+	if(!Value && !bIsMoving && !bOverload)
 	{
 		if (Magnet)//PhysicsConstraint)
 		{
 			Magnet->SetSimulatePhysics(false);
-			PhysicsConstraint->SetLinearZLimit(ELinearConstraintMotion::LCM_Free, 1000.f);
+			//PhysicsConstraint->SetLinearZLimit(ELinearConstraintMotion::LCM_Free, 1000.f);
 			RelativeMagnetLocation = Magnet->GetComponentLocation();
 			UE_LOG(LogTemp, Warning, TEXT("Gravity and physics disabled!"));
 		}
@@ -171,7 +174,7 @@ void ACrane::StartMagnet(const FInputActionValue& InValue)
 void ACrane::Detach(const FInputActionValue& InValue)
 {
 	bool Value = InValue.Get<bool>();
-	if (!Value)
+	if (!Value && !bOverload)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("DetachActor"));
 		Server_DetachActor();
@@ -196,16 +199,17 @@ void ACrane::Overload(float DeltaTime)
 {
 	if (ControlComponent)
 	{
+	
 		FVector RelativeLocation = ControlComponent->GetRelativeLocation();
 		FVector DirectionVector = OverloadLocation - RelativeLocation;
 		FVector NormalizedDirectionVector = (OverloadLocation - RelativeLocation).GetSafeNormal();
 		if (DirectionVector.IsNearlyZero(Speed))
 		{
-			//bOverload = false;
+			bOverload = false;
 			//run sim
 			return;
 		}
-		NormalizedDirectionVector.X *= Speed;
+		NormalizedDirectionVector.X *= -Speed * DeltaTime;
 		NormalizedDirectionVector.Y = 0.f;
 		NormalizedDirectionVector.Z = 0.f;
 		ControlComponent->AddWorldOffset(NormalizedDirectionVector, true);
@@ -225,9 +229,9 @@ void ACrane::Attach()
 	{
 		if (MagnetHit.GetActor())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Attach Found!"));
+			MagnetHit.GetActor()->SetActorEnableCollision(false);
 			Server_AttachActor(MagnetHit.GetActor());
-			AttachedActor = MagnetHit.GetActor();
+			//AttachedActor = MagnetHit.GetActor();
 			Direction = 1;
 		}
 	}
@@ -262,6 +266,9 @@ void ACrane::Server_DetachActor_Implementation()
 	if (AttachedActor)
 	{
 		AttachedActor->DetachFromActor(DetachRules);
+		AttachedActor->SetActorEnableCollision(true); 
+		Magnet->SetSimulatePhysics(true);
+		//bOverload = true;
 	}
 	else
 		UE_LOG(LogTemp, Warning, TEXT("AttachedActor is nullptr"));
@@ -270,7 +277,11 @@ void ACrane::Server_DetachActor_Implementation()
 void ACrane::Server_AttachActor_Implementation(AActor* Actor)
 {
 	AttachedActor = Actor;
-	AttachedActor->AttachToComponent(Magnet, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("S_Attach"));
+	if (Actor->AttachToComponent(Magnet, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("S_Attach")))
+	{
+		Actor->SetActorEnableCollision(false);
+		UE_LOG(LogTemp, Warning, TEXT("Attach pass"));
+	}
 }
 
 void ACrane::Server_Move_Implementation(FVector NewLocation)

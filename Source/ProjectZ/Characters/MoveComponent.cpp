@@ -42,8 +42,8 @@ void UMoveComponent::BeginPlay()
 void UMoveComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	if(GetOwnerRole()==ROLE_Authority)
-	{
+	//if(GetOwnerRole() == ROLE_AutonomousProxy)
+	//{
 		UpdateMovement(DeltaTime);
 		/*if (bIsOwnerAI)
 		{
@@ -56,7 +56,7 @@ void UMoveComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 				UE_LOG(LogTemp, Warning, TEXT(" Name: %s, Role LOCAL,MoveResult: %d"), *GetOwner()->GetName(), MoveResult);
 			}
 		}*/
-	}
+	//}
 }
 
 void UMoveComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -67,35 +67,24 @@ void UMoveComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(UMoveComponent, LocationOnServer);
 }
 
-void UMoveComponent::Server_SendMove_Implementation(FVector InLocation, float InSpeed, FVector InDirection)
+void UMoveComponent::Server_SendMove_Implementation(FMoveData InData)
 {
-	GetOwner()->SetActorLocation(InLocation);
-	SpeedOnServer = InSpeed;
-	//UE_LOG(LogTemp, Warning, TEXT("Owner: %s, SpeedOnServer: %f"), *GetOwner()->GetName(), SpeedOnServer);
-	if (InDirection.IsNearlyZero())
-	{
-		DirectionOnServer = 0.f;
-	}
-	else
-	{
-		/*float Dot = InDirection.Dot(GetOwner()->GetActorForwardVector());
-		FVector Cross = InDirection.Cross(GetOwner()->GetActorForwardVector());
-		float Direction = Cross.Dot(GetOwner()->GetActorUpVector());
-		if (Direction < 0)
-			Direction = -1.f;
-		else
-			Direction = 1.f;
+	FVector OldLocation = GetOwner()->GetActorLocation();
 
-		FVector Start = GetOwner()->GetActorLocation();
-		DrawDebugLine(GetWorld(), Start, Start + GetOwner()->GetActorForwardVector() * 500.f, FColor::Red, false, 0.01f);
-		DrawDebugLine(GetWorld(), Start, Start + InDirection * 500.f, FColor::Blue, false, 0.01f);
-		float Angle = FMath::RadiansToDegrees(FMath::Atan2(Cross.Length(), Dot));*/
-		DirectionOnServer = CalculateDirectionAngle(InDirection);//Angle * -Direction;
-		//UE_LOG(LogTemp, Warning, TEXT("Angle: %f"), DirectionOnServer);
+	if (!InData.NetMovement.IsNearlyZero() && FVector::Dist(OldLocation, InData.NetMovement) >= 500.f)
+	{
+		Client_UpdateMovement(OldLocation);
+		return;
 	}
+
+	FHitResult ServerMoveHit;
+	GetOwner()->SetActorLocation(InData.NetMovement, true, &ServerMoveHit);
+
+	SpeedOnServer = InData.Speed;
+	DirectionOnServer = CalculateDirectionAngle(InData.Direction);
 }
 
-bool UMoveComponent::Server_SendMove_Validate(FVector InLocation, float InSpeed, FVector InDirection)
+bool UMoveComponent::Server_SendMove_Validate(FMoveData InData)
 {
 	return true;
 }
@@ -136,6 +125,7 @@ void UMoveComponent::ApplyMovement(float DeltaTime)
 	FHitResult MoveHit;
 	NetMove = CurrentDirection * Speed * DeltaTime;
 	//DrawDebugLine(GetWorld(), GetOwner()->GetActorLocation(), GetOwner()->GetActorLocation() + NetMove * 1000.f, FColor::Cyan, false, 0.1f);
+	//UE_LOG(LogTemp, Warning, TEXT("NetMove: %s, Speed: %f, CurrentDirection: %s"), *NetMove.ToString(), Speed, *CurrentDirection.ToString());
 	GetOwner()->AddActorWorldOffset(NetMove, true, &MoveHit);
 
 	if(bOrientRotationToMovement)
@@ -149,21 +139,32 @@ void UMoveComponent::ApplyMovement(float DeltaTime)
 	if (MoveHit.bBlockingHit)
 	{
 		FHitResult ProjectionHit;
-		FVector ProjectionDirection = FVector::VectorPlaneProject(CurrentDirection, MoveHit.Normal);
-		//ProjectionDirection.Normalize();
+		FVector ProjectionDirection = FVector::VectorPlaneProject(CurrentDirection, MoveHit.ImpactNormal);
+		ProjectionDirection.Normalize();
 		NetMove = ProjectionDirection * Speed * DeltaTime;
 		GetOwner()->AddActorWorldOffset(NetMove, true, &ProjectionHit);
+		if (ProjectionHit.bBlockingHit)
+		{
+			FVector NewProjectionDirection = FVector::VectorPlaneProject(ProjectionDirection, ProjectionHit.ImpactNormal);
+			NewProjectionDirection.Normalize();
+			NetMove = NewProjectionDirection * Speed * DeltaTime;
+			GetOwner()->AddActorWorldOffset(NetMove, false, &ProjectionHit);
+		}
 	}
+	
+	//todo: send to server for validation....
+	FMoveData MoveData;
+	MoveData.Speed = Speed;
+	MoveData.Direction = CurrentDirection;
+	MoveData.NetMovement = GetOwner()->GetActorLocation();
+	
+	Server_SendMove(MoveData);
 
+	
+	//LocationOnServer = GetOwner()->GetActorLocation();
 
-
-	SpeedOnServer = Speed;
-	DirectionOnServer = CalculateDirectionAngle(CurrentDirection);
-	LocationOnServer = GetOwner()->GetActorLocation();
-
-	if (!bIsOwnerAI)
-		OnRep_LocationOnServer();
-
+	/*if (!bIsOwnerAI)
+		OnRep_LocationOnServer();*/
 }
 
 void UMoveComponent::ResetDirection(float DeltaTime)
@@ -190,8 +191,8 @@ void UMoveComponent::HandleOverallMovement(float DeltaTime)
 
 void UMoveComponent::AddMovement(FVector Direction, EMoveState InState)
 {
-	if (GetOwnerRole() == ROLE_Authority)
-	{
+	//if (GetOwnerRole() == ROLE_Authority)
+	//{
 		SetMoveState(InState);
 		NetDirection += Direction;
 		if (InState == EMoveState::Run)
@@ -199,13 +200,13 @@ void UMoveComponent::AddMovement(FVector Direction, EMoveState InState)
 		else
 			Speed = MaxWalkSpeed;
 
-		//Speed = 600.f;
-		//UE_LOG(LogTemp, Warning, TEXT("On Server %s: Speed: %f, MRS: %f, MWS: %f"), *GetOwner()->GetName(), Speed, MaxRunSpeed, MaxWalkSpeed);
+		//Speed = 250.f;
+		//UE_LOG(LogTemp, Warning, TEXT("Moving"));
 		if (NetDirection.Size() > 1.f)
 			NetDirection.Normalize();
-	}
-	else
-		Server_AddMovement(Direction, InState);
+	//}
+	//else
+		//Server_AddMovement(Direction, InState);
 
 }
 
@@ -288,15 +289,11 @@ void UMoveComponent::UpdateMovement(float DeltaTime)
 		}
 		//UE_LOG(LogTemp, Warning, TEXT("%s, AI Update Called!"), *GetOwner()->GetName());
 	}
-	else
+	else if (GetOwnerRole() == ROLE_AutonomousProxy)
 	{
-		if (GetOwnerRole() == ROLE_Authority)
-		{
-			HandleOverallMovement(DeltaTime);
-		}
-		else if(GetOwnerRole() == ROLE_AutonomousProxy)
-			Server_HandleOverallMovement(DeltaTime);
-
+		HandleOverallMovement(DeltaTime);
+		//else if(GetOwnerRole() == ROLE_AutonomousProxy)
+			//Server_HandleOverallMovement(DeltaTime);
 		//UE_LOG(LogTemp, Warning, TEXT("%s, Player Update Called"), *GetOwner()->GetName());
 	}
 }

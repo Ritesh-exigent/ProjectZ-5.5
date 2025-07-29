@@ -14,18 +14,42 @@ struct FMoveData {
 
 	GENERATED_BODY()
 
+public:
+
 	FMoveData(){}
+
+	FMoveData(int32 InSpeed, FVector InNetMovement, FVector InDirection)
+	{
+		NetMovement = InNetMovement;
+		Speed = InSpeed;
+		Direction = InDirection;
+	}
+	
+	UPROPERTY()
+	float Speed;
+	UPROPERTY()
 	FVector NetMovement;
+	UPROPERTY()
+	FVector Direction;
+
+	void Print() {
+		UE_LOG(LogTemp, Warning, TEXT("NetMovement: %s \n Speed: %f"), *NetMovement.ToString(), Speed);
+	}
 };
 
-USTRUCT()
-struct FServerMoveData {
-
-	GENERATED_BODY()
-
-	FServerMoveData(){}
-	FVector ReplicatedMovement;
-};
+//USTRUCT()
+//struct FServerMoveData {
+//
+//	GENERATED_BODY()
+//
+//public:
+//
+//	FServerMoveData(FVector	InReplicatedMovement)
+//	{
+//		ReplicatedMovement = InReplicatedMovement;
+//	}
+//	FVector ReplicatedMovement;
+//};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTZ_API UMoveComponent : public UActorComponent
@@ -37,6 +61,9 @@ public:
 	UMoveComponent();
 
 protected:
+
+	UPROPERTY(EditDefaultsOnly, Category="Settings | Values")
+	float MaxServerSpeed;
 
 	UPROPERTY(EditDefaultsOnly, Category="Settings | Values")
 	float MaxRunSpeed;
@@ -70,9 +97,9 @@ protected:
 	FVector NetDirection;
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_SendMove(FVector InLocation, float InSpeed, FVector InDirection);
-	void Server_SendMove_Implementation(FVector InLocation, float InSpeed, FVector InDirection);
-	bool Server_SendMove_Validate(FVector InLocation, float InSpeed, FVector InDirection);
+	void Server_SendMove(FMoveData InData);
+	void Server_SendMove_Implementation(FMoveData InData);
+	bool Server_SendMove_Validate(FMoveData InData);
 
 	UFUNCTION(Server, Reliable)
 	void Server_AddMovement(FVector Direction, EMoveState InState);
@@ -104,7 +131,6 @@ private:
 	FVector TargetLocation;
 	EMoveState MoveState;
 	EMoveResult MoveResult;
-
 	
 	void InterpDirection(float DeltaTime);
 	void ApplyMovement(float DeltaTime);

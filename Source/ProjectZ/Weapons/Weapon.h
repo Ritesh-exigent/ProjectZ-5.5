@@ -127,7 +127,7 @@ private:
 	float RateOfFire;
 	UPROPERTY(ReplicatedUsing = OnRep_OnAmmoStateChanged)
 	int32 CurrentAmmo;
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_OnAmmoStateChanged)
 	int32 TotalAmmo;
 
 	UPROPERTY(Replicated)

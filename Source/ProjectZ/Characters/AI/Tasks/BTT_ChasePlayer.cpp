@@ -52,11 +52,14 @@ EBTNodeResult::Type UBTT_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerC
 EBTNodeResult::Type UBTT_ChasePlayer::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	FChaseMemory* ChaseMemory = (FChaseMemory*)NodeMemory;
-	if (!(ChaseMemory->ZController))
-		ChaseMemory->ZController = Cast<AZAIController>(OwnerComp.GetAIOwner());
-	else
+	if (ChaseMemory)
 	{
-		ChaseMemory->ZController->AbortAIMovement();
+		if (!(ChaseMemory->ZController))
+			ChaseMemory->ZController = Cast<AZAIController>(OwnerComp.GetAIOwner());
+		else
+		{
+			ChaseMemory->ZController->AbortAIMovement();
+		}
 	}
 	return EBTNodeResult::Aborted;
 }
@@ -67,7 +70,7 @@ void UBTT_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 
 	FChaseMemory* ChaseMemory = (FChaseMemory*)NodeMemory;
 
-	if (ChaseMemory && !ChaseMemory->TargetActor)
+	if ((ChaseMemory && !ChaseMemory->TargetActor) || !ChaseMemory)
 	{
 		FinishLatentAbort(OwnerComp);
 		return;
@@ -78,7 +81,6 @@ void UBTT_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 		ChaseMemory->CurrentPathIndex++;
 		if (ChaseMemory->CurrentPathIndex >= ChaseMemory->PathPoints.Num())
 		{
-			delete ChaseMemory;
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		}
 		else
@@ -115,7 +117,7 @@ bool UBTT_ChasePlayer::CalcPath(FChaseMemory* ChaseMemory)
 	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
 	if (NavSystem)
 	{
-		UNavigationPath* Path = NavSystem->FindPathToLocationSynchronously(GetWorld(), ChaseMemory->ZController->GetPawn()->GetActorLocation(), ChaseMemory->PreviousLocation);
+		UNavigationPath* Path = NavSystem->FindPathToLocationSynchronously(GetWorld(), ChaseMemory->ZController->GetPawn()->GetActorLocation(), ChaseMemory->TargetActor->GetActorLocation());
 		if (Path && Path->PathPoints.Num() > 0)
 		{
 			ChaseMemory->PathPoints = Path->PathPoints;

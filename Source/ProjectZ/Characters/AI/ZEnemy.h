@@ -60,6 +60,7 @@ public:
 
 	//..........................
 	void Reset();
+	UFUNCTION(BlueprintCallable)
 	void Init();
 
 private:

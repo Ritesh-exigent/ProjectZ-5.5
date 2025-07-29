@@ -22,7 +22,10 @@ void AZGameState::BeginPlay()
 	Super::BeginPlay();
 
 	if (HasAuthority())
+	{
+		SetIsWaveCompleted(true);
 		StartGameQuest();
+	}
 }
 
 void AZGameState::Tick(float DeltaTime)

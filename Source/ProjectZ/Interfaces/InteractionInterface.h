@@ -30,4 +30,5 @@ public:
 	void Interact_BP(ASPlayer* InPlayer);
 	virtual void Interact(ASPlayer* InPlayer);
 	
+	
 };

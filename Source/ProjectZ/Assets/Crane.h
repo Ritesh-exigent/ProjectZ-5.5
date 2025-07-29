@@ -116,7 +116,8 @@ public:
 	virtual void SetupPawnInputMappingContext(APlayerController* PC) override;
 	UFUNCTION(BlueprintCallable)
 	void SetControlMesh(UStaticMeshComponent* InComponent, UStaticMeshComponent* InMagnet, UPhysicsConstraintComponent* InPCComponent);
-	__inline void SetOverload(bool bInValue) { bOverload = bInValue; }
+	UFUNCTION(BlueprintCallable)
+	inline void SetOverload(bool bInValue) { bOverload = bInValue; }
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	inline bool IsOverloaded() { return bOverload; }
 	UFUNCTION(BlueprintCallable, BlueprintPure)

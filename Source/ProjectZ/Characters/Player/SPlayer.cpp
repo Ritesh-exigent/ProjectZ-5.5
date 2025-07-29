@@ -50,14 +50,14 @@ void ASPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GetLocalRole() == ROLE_Authority)
+	/*if (GetLocalRole() == ROLE_Authority)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("My Role: Server"));
 	}
 	else if(GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("My Role: Client"));
-	}
+	}*/
 
 	AnimInst = Cast<USPAnimInstance>(GetMesh()->GetAnimInstance());
 	InitPlayerHUD();
@@ -156,6 +156,8 @@ void ASPlayer::Restart()
 void ASPlayer::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 
+	if (!HasAuthority()) return;
+
 	if (OtherActor)
 	{
 		if (OtherActor->IsA<AAmmunition>())
@@ -163,7 +165,7 @@ void ASPlayer::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 			AAmmunition* Ammo = Cast<AAmmunition>(OtherActor);
 			if (Ammo)
 			{
-				if (WComp->AddAmmo(Ammo->GetDropAmmoAmount(true)))
+				if (WComp && WComp->AddAmmo(Ammo->GetDropAmmoAmount(true)))
 				{
 					Ammo->SetOwner(this);
 					Ammo->InitDestroy();
@@ -172,7 +174,6 @@ void ASPlayer::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 		}
 		else if (OtherActor->IsA<AQuestItem>())
 		{
-			if (!HasAuthority()) return;
 			AQuestItem* Item = Cast<AQuestItem>(OtherActor);
 			if (Item && Item->IsOfType(EQuestItemType::Interactable))
 			{
@@ -189,11 +190,13 @@ void ASPlayer::PerformMove(const FInputActionValue& Value)
 	if (Direction.Size() > 0.01f && MoveComp)
 	{
 		FVector DirectionVector = GetActorForwardVector() * Direction.X + GetActorRightVector() * Direction.Y;
-		if(bSprint)
-		MoveComp->AddMovement(DirectionVector, EMoveState::Run);
+		if (bSprint)
+			MoveComp->AddMovement(DirectionVector, EMoveState::Run);
 		else
-		MoveComp->AddMovement(DirectionVector, EMoveState::Walk);
+			MoveComp->AddMovement(DirectionVector, EMoveState::Walk);
 	}
+	else
+		UE_LOG(LogTemp, Warning, TEXT("MoveComp is nullptr in splayer.cpp"));
 }
 
 void ASPlayer::Look(const FInputActionValue& Value)
@@ -321,7 +324,10 @@ void ASPlayer::BeginInteract()
 		}
 	}
 	else
+	{
 		Server_BeginInteract();
+
+	}
 }
 
 void ASPlayer::InitPlayerHUD()

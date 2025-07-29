@@ -22,7 +22,7 @@ UHDComponent::UHDComponent()
 void UHDComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
+	C_Health = MaxHealth;
 	
 }
 
